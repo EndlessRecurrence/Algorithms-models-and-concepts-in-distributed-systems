@@ -3,6 +3,26 @@ Coursework for the AMCDS subject.
 
 ## Notes
 
+### Abstract API notions used in the book
+
+```
+	  |                           ^
+ Request  |                           |  Indication
+	  V                           |
+	---------------------------------
+	|send                    deliver|
+	|                               |
+	|                               |
+	|            Layer n            |
+	|                               |
+	|invoke                  receive|
+	---------------------------------
+	  |                           ^
+ Request  |                           |  Indication
+	  V                           |
+```
+
+
 ### Types of distributed algorithms
 
 1. fail-stop algorithms, designed under the assumption that processes can fail by crashing but the crashes can be reliably detected by all the other processes;
@@ -82,6 +102,59 @@ Properties:
 ```
 
 :exclamation: see page 38 for the "Eliminate Duplicates" algorithm containing an implementation of a perfect point-to-point link instance 
+
+### Failure detection
+- provides information about which processes have crashed and which are correct, with this information not being necessarily accurate (not very useful against Byzantine faults) 
+
+1. Perfect Failure Detection
+
+```
+Module:
+	Name: PerfectFailureDetector, instance P. 
+Events:
+	Indication: ⟨ P, Crash | p ⟩: Detects that process p has crashed. 
+Properties:
+	PFD1: Strong completeness: Eventually, every process that crashes is permanently detected by every correct process.
+	PFD2: Strong accuracy: If a process p is detected by any process, then p has crashed.
+```
+
+:exclamation: see page 51 for the "Exclude On Timeout" algorithm containing an implementation of a perfect failure detector 
+
+2. Leader election
+- useful when instead of detecting each failed process, we have to identify one process that has not failed
+- can only be formulated for crash-stop process abstractions
+
+```
+Module:
+	Name: LeaderElection, instance le. 
+
+Events:
+	Indication: ⟨ le, Leader | p ⟩: Indicates that process p is elected as leader. 
+
+Properties:
+	LE1: Eventual detection: Either there is no correct process, or some correct process is eventually elected as the leader.
+	LE2: Accuracy: If a process is leader, then all previously elected leaders have crashed.
+```
+
+:exclamation: see page 53 for the "Monarchical Leader Election" algorithm containing an implementation of a leader election abstraction assuming a perfect failure detector
+
+3. Eventually Perfect Failure Detector
+- keeps track of processes that are "suspected" to have failed (instead of tracking failed processes)
+- uses a timeout
+- p increases its delay if it eventually receives a message from the "suspected" process q 
+
+```
+Module:
+	Name: EventuallyPerfectFailureDetector, instance QP. 
+
+Events:
+	Indication: ⟨ QP , Suspect | p ⟩: Notifies that process p is suspected to have crashed.
+	Indication: ⟨ QP, Restore | p ⟩: Notifies that process p is not suspected anymore. 
+
+Properties:
+	EPFD1: Strong completeness: Eventually, every process that crashes is perma- nently suspected by every correct process.
+	EPFD2: Eventual strong accuracy: Eventually, no correct process is suspected by any correct process.
+```
 
 ### Resilience
 - the relation between the number f of potentially faulty processes and the total number N of processes in the system
