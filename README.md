@@ -156,10 +156,26 @@ Properties:
 	EPFD2: Eventual strong accuracy: Eventually, no correct process is suspected by any correct process.
 ```
 
+### Reliable broadcast
+```
+Module:
+		Name: ReliableBroadcast, instance rb.
+
+Events:
+		Request: <rb, Broadcast | m>: Broadcasts a message m to all processes.
+		Indication: <rb, Deliver | p, m>: Delivers a message m broadcast by process p.
+
+Properties:
+		RB1: Validity: If a correct process p broadcasts a message m, then p eventually delivers m.
+		RB2: No duplication: No message is delivered more than once.
+		RB3: No creation: If a process delivers a message m with sender s, then m was previously broadcast by process s.
+		RB4: Agreement: If a message m is delivered by some correct process, then m is eventually delivered by every correct process.
+```
+
+eexclamation: see page 78 for the "Fail-stop" algorithm 
+
 ### Resilience
 - the relation between the number f of potentially faulty processes and the total number N of processes in the system
-
-
 
 
 ## Resources
@@ -169,3 +185,5 @@ Properties:
 - [Elixir - concurrency](https://manzanit0.github.io/elixir/2019/09/29/elixir-concurrency.html)
 
 - [Cooperative vs. preemptive scheduling](https://stackoverflow.com/questions/55703365/what-is-the-difference-between-cooperative-multitasking-and-preemptive-multitask)
+
+- [What are protocol buffers?](https://medium.com/javarevisited/what-are-protocol-buffers-and-why-they-are-widely-used-cbcb04d378b6)
