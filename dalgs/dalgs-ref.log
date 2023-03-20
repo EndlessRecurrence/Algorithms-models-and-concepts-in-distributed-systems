@@ -1,7 +1,0 @@
-20:24:05.458 INF hub: Listening on 127.0.0.1:5000
-20:24:05.458 INF ref-3: listening on 127.0.0.1:10557
-20:24:05.458 INF ref-1: listening on 127.0.0.1:10555
-20:24:05.458 INF ref-2: listening on 127.0.0.1:10556
-20:24:05.460 INF hub: Received registration from ref-3
-20:24:05.460 INF hub: Received registration from ref-2
-20:24:05.460 INF hub: Received registration from ref-1

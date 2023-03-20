@@ -6,21 +6,36 @@ Coursework for the AMCDS subject.
 ### Abstract API notions used in the book
 
 ```
-	  |                           ^
- Request  |                           |  Indication
-	  V                           |
-	---------------------------------
-	|send                    deliver|
-	|                               |
-	|                               |
-	|            Layer n            |
-	|                               |
-	|invoke                  receive|
-	---------------------------------
-	  |                           ^
- Request  |                           |  Indication
-	  V                           |
+                                                  ▲
+       │                                          │
+       │                                          │
+       │                                          │
+       │                                          │
+       │                                          │
+       │                                          │
+┌──────▼──────────────────────────────────────────┴───┐
+│   send                                    deliver   │
+│                                                     │
+│                                                     │
+│                                                     │
+│                                                     │
+│                      Layer n                        │
+│                                                     │
+│                                                     │
+│                                                     │
+│                                                     │
+│                                                     │
+│ invoke                                   receive    │
+└──────┬──────────────────────────────────────────▲───┘
+       │                                          │
+       │                                          │
+       │                                          │
+       │                                          │
+       │                                          │
+       │                                          │
+       ▼                                          │
 ```
+
 
 
 ### Types of distributed algorithms
@@ -190,3 +205,9 @@ eexclamation: see page 78 for the "Fail-stop" algorithm
 - [What are protocol buffers?](https://medium.com/javarevisited/what-are-protocol-buffers-and-why-they-are-widely-used-cbcb04d378b6)
 
 - [elixir-protobuf](https://github.com/elixir-protobuf/protobuf)
+
+- [Async TCP client/server in Elixir](https://elixirforum.com/t/async-tcp-client-server/25202/2)
+
+- [Dangers of GenServers in Elixir](https://learn-elixir.dev/blogs/dangers-of-genservers)
+
+- [Elixir - GenServer call not initiating handle_call](https://stackoverflow.com/questions/46510137/elixir-genserver-call-not-initiaing-handle-call)
