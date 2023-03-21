@@ -6,7 +6,13 @@ defmodule DistributedAlgorithmsApp do
   @doc """
     Starting point
   """
-  def run do
-    :ey
+  def start() do
+    children = [
+      {DynamicSupervisor, strategy: :one_for_one, name: DistributedAlgorithmsApp.PerfectLinkHandler.DynamicSupervisor},
+      {Task, fn -> DistributedAlgorithmsApp.PerfectLinkLayer.accept(Application.get_env(:elixir_distributed_algorithms, :port)) end}
+    ]
+
+    opts = [strategy: :one_for_one, name: DistributedAlgorithmsApp.Supervisor]
+    Supervisor.start_link(children, opts)
   end
 end

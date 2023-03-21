@@ -211,3 +211,7 @@ eexclamation: see page 78 for the "Fail-stop" algorithm
 - [Dangers of GenServers in Elixir](https://learn-elixir.dev/blogs/dangers-of-genservers)
 
 - [Elixir - GenServer call not initiating handle_call](https://stackoverflow.com/questions/46510137/elixir-genserver-call-not-initiaing-handle-call)
+
+- [Handling TCP connections in Elixir](https://andrealeopardi.com/posts/handling-tcp-connections-in-elixir/)
+
+- [Communicating Sequential Processes vs. Actor model](https://dev.to/karanpratapsingh/csp-vs-actor-model-for-concurrency-1cpg)
