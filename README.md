@@ -215,3 +215,5 @@ eexclamation: see page 78 for the "Fail-stop" algorithm
 - [Handling TCP connections in Elixir](https://andrealeopardi.com/posts/handling-tcp-connections-in-elixir/)
 
 - [Communicating Sequential Processes vs. Actor model](https://dev.to/karanpratapsingh/csp-vs-actor-model-for-concurrency-1cpg)
+
+- [Learn you some Erlang - Sockets](https://learnyousomeerlang.com/buckets-of-sockets)
