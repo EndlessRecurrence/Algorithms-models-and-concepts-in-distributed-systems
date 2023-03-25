@@ -217,3 +217,9 @@ eexclamation: see page 78 for the "Fail-stop" algorithm
 - [Communicating Sequential Processes vs. Actor model](https://dev.to/karanpratapsingh/csp-vs-actor-model-for-concurrency-1cpg)
 
 - [Learn you some Erlang - Sockets](https://learnyousomeerlang.com/buckets-of-sockets)
+
+- [Non-blocking TCP server using OTP principles](https://stackoverflow.com/questions/6170613/non-blocking-tcp-server-using-otp-principles)
+
+- [Non-blocking IO - Elixir](https://elixirforum.com/t/non-blocking-io/376/8)
+
+- [What OTP pattern to use for gen_server socket broadcast?](https://stackoverflow.com/questions/24974170/what-otp-pattern-to-use-for-gen-server-socket-broadcast)

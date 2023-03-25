@@ -1,3 +1,14 @@
+# In order to encode and decode messages, use the following example:
+#
+#     Protobuf.encode(%MyMessage{...})
+      #=> <<...>>
+#
+#     Protobuf.decode(<<...>>, MyMessage)
+      #=> %MyMessage{...}
+#     Protobuf.decode(<<"bad data">>, MyMessage)
+      #=> ** (Protobuf.DecodeError) ...
+#
+
 defmodule Main.Message.Type do
   @moduledoc false
   use Protobuf, enum: true, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
