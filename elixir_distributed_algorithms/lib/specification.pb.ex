@@ -9,7 +9,7 @@
       #=> ** (Protobuf.DecodeError) ...
 #
 
-defmodule Main.Message.Type do
+defmodule Proto.Message.Type do
   @moduledoc false
   use Protobuf, enum: true, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
@@ -60,7 +60,7 @@ defmodule Main.Message.Type do
   field :PL_SEND, 91
 end
 
-defmodule Main.ProcessId do
+defmodule Proto.ProcessId do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
@@ -71,7 +71,7 @@ defmodule Main.ProcessId do
   field :rank, 5, type: :int32
 end
 
-defmodule Main.Value do
+defmodule Proto.Value do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
@@ -79,7 +79,7 @@ defmodule Main.Value do
   field :v, 2, type: :int32
 end
 
-defmodule Main.ProcRegistration do
+defmodule Proto.ProcRegistration do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
@@ -87,363 +87,363 @@ defmodule Main.ProcRegistration do
   field :index, 2, type: :int32
 end
 
-defmodule Main.ProcInitializeSystem do
+defmodule Proto.ProcInitializeSystem do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :processes, 1, repeated: true, type: Main.ProcessId
+  field :processes, 1, repeated: true, type: Proto.ProcessId
 end
 
-defmodule Main.ProcDestroySystem do
+defmodule Proto.ProcDestroySystem do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 end
 
-defmodule Main.AppBroadcast do
+defmodule Proto.AppBroadcast do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :value, 1, type: Main.Value
+  field :value, 1, type: Proto.Value
 end
 
-defmodule Main.AppValue do
+defmodule Proto.AppValue do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :value, 1, type: Main.Value
+  field :value, 1, type: Proto.Value
 end
 
-defmodule Main.AppPropose do
+defmodule Proto.AppPropose do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
   field :topic, 1, type: :string
-  field :value, 2, type: Main.Value
+  field :value, 2, type: Proto.Value
 end
 
-defmodule Main.AppDecide do
+defmodule Proto.AppDecide do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :value, 1, type: Main.Value
+  field :value, 1, type: Proto.Value
 end
 
-defmodule Main.AppRead do
-  @moduledoc false
-  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
-
-  field :register, 1, type: :string
-end
-
-defmodule Main.AppWrite do
-  @moduledoc false
-  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
-
-  field :register, 1, type: :string
-  field :value, 2, type: Main.Value
-end
-
-defmodule Main.AppReadReturn do
-  @moduledoc false
-  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
-
-  field :register, 1, type: :string
-  field :value, 2, type: Main.Value
-end
-
-defmodule Main.AppWriteReturn do
+defmodule Proto.AppRead do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
   field :register, 1, type: :string
 end
 
-defmodule Main.UcPropose do
+defmodule Proto.AppWrite do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :value, 1, type: Main.Value
+  field :register, 1, type: :string
+  field :value, 2, type: Proto.Value
 end
 
-defmodule Main.UcDecide do
+defmodule Proto.AppReadReturn do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :value, 1, type: Main.Value
+  field :register, 1, type: :string
+  field :value, 2, type: Proto.Value
 end
 
-defmodule Main.EpAbort do
+defmodule Proto.AppWriteReturn do
+  @moduledoc false
+  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
+
+  field :register, 1, type: :string
+end
+
+defmodule Proto.UcPropose do
+  @moduledoc false
+  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
+
+  field :value, 1, type: Proto.Value
+end
+
+defmodule Proto.UcDecide do
+  @moduledoc false
+  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
+
+  field :value, 1, type: Proto.Value
+end
+
+defmodule Proto.EpAbort do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 end
 
-defmodule Main.EpAborted do
+defmodule Proto.EpAborted do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
   field :ets, 1, type: :int32
   field :valueTimestamp, 2, type: :int32
-  field :value, 3, type: Main.Value
+  field :value, 3, type: Proto.Value
 end
 
-defmodule Main.EpPropose do
+defmodule Proto.EpPropose do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :value, 1, type: Main.Value
+  field :value, 1, type: Proto.Value
 end
 
-defmodule Main.EpDecide do
+defmodule Proto.EpDecide do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
   field :ets, 1, type: :int32
-  field :value, 2, type: Main.Value
+  field :value, 2, type: Proto.Value
 end
 
-defmodule Main.EpInternalRead do
+defmodule Proto.EpInternalRead do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 end
 
-defmodule Main.EpInternalState do
+defmodule Proto.EpInternalState do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
   field :valueTimestamp, 1, type: :int32
-  field :value, 2, type: Main.Value
+  field :value, 2, type: Proto.Value
 end
 
-defmodule Main.EpInternalWrite do
+defmodule Proto.EpInternalWrite do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :value, 1, type: Main.Value
+  field :value, 1, type: Proto.Value
 end
 
-defmodule Main.EpInternalAccept do
-  @moduledoc false
-  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
-end
-
-defmodule Main.EpInternalDecided do
-  @moduledoc false
-  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
-
-  field :value, 1, type: Main.Value
-end
-
-defmodule Main.EcInternalNack do
+defmodule Proto.EpInternalAccept do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 end
 
-defmodule Main.EcStartEpoch do
+defmodule Proto.EpInternalDecided do
+  @moduledoc false
+  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
+
+  field :value, 1, type: Proto.Value
+end
+
+defmodule Proto.EcInternalNack do
+  @moduledoc false
+  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
+end
+
+defmodule Proto.EcStartEpoch do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
   field :newTimestamp, 1, type: :int32
-  field :newLeader, 2, type: Main.ProcessId
+  field :newLeader, 2, type: Proto.ProcessId
 end
 
-defmodule Main.EcInternalNewEpoch do
+defmodule Proto.EcInternalNewEpoch do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
   field :timestamp, 1, type: :int32
 end
 
-defmodule Main.BebBroadcast do
+defmodule Proto.BebBroadcast do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :message, 1, type: Main.Message
+  field :message, 1, type: Proto.Message
 end
 
-defmodule Main.BebDeliver do
+defmodule Proto.BebDeliver do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :message, 1, type: Main.Message
-  field :sender, 2, type: Main.ProcessId
+  field :message, 1, type: Proto.Message
+  field :sender, 2, type: Proto.ProcessId
 end
 
-defmodule Main.EldTimeout do
-  @moduledoc false
-  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
-end
-
-defmodule Main.EldTrust do
-  @moduledoc false
-  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
-
-  field :process, 1, type: Main.ProcessId
-end
-
-defmodule Main.NnarRead do
+defmodule Proto.EldTimeout do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 end
 
-defmodule Main.NnarInternalRead do
+defmodule Proto.EldTrust do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :readId, 1, type: :int32
+  field :process, 1, type: Proto.ProcessId
 end
 
-defmodule Main.NnarInternalValue do
+defmodule Proto.NnarRead do
+  @moduledoc false
+  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
+end
+
+defmodule Proto.NnarInternalRead do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
   field :readId, 1, type: :int32
-  field :timestamp, 2, type: :int32
-  field :writerRank, 3, type: :int32
-  field :value, 4, type: Main.Value
 end
 
-defmodule Main.NnarInternalWrite do
+defmodule Proto.NnarInternalValue do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
   field :readId, 1, type: :int32
   field :timestamp, 2, type: :int32
   field :writerRank, 3, type: :int32
-  field :value, 4, type: Main.Value
+  field :value, 4, type: Proto.Value
 end
 
-defmodule Main.NnarWrite do
+defmodule Proto.NnarInternalWrite do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :value, 1, type: Main.Value
+  field :readId, 1, type: :int32
+  field :timestamp, 2, type: :int32
+  field :writerRank, 3, type: :int32
+  field :value, 4, type: Proto.Value
 end
 
-defmodule Main.NnarInternalAck do
+defmodule Proto.NnarWrite do
+  @moduledoc false
+  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
+
+  field :value, 1, type: Proto.Value
+end
+
+defmodule Proto.NnarInternalAck do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
   field :readId, 1, type: :int32
 end
 
-defmodule Main.NnarReadReturn do
+defmodule Proto.NnarReadReturn do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :value, 1, type: Main.Value
+  field :value, 1, type: Proto.Value
 end
 
-defmodule Main.NnarWriteReturn do
-  @moduledoc false
-  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
-end
-
-defmodule Main.EpfdTimeout do
+defmodule Proto.NnarWriteReturn do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 end
 
-defmodule Main.EpfdInternalHeartbeatRequest do
+defmodule Proto.EpfdTimeout do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 end
 
-defmodule Main.EpfdInternalHeartbeatReply do
+defmodule Proto.EpfdInternalHeartbeatRequest do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 end
 
-defmodule Main.EpfdSuspect do
+defmodule Proto.EpfdInternalHeartbeatReply do
+  @moduledoc false
+  use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
+end
+
+defmodule Proto.EpfdSuspect do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :process, 1, type: Main.ProcessId
+  field :process, 1, type: Proto.ProcessId
 end
 
-defmodule Main.EpfdRestore do
+defmodule Proto.EpfdRestore do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :process, 1, type: Main.ProcessId
+  field :process, 1, type: Proto.ProcessId
 end
 
-defmodule Main.PlSend do
+defmodule Proto.PlSend do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :destination, 1, type: Main.ProcessId
-  field :message, 2, type: Main.Message
+  field :destination, 1, type: Proto.ProcessId
+  field :message, 2, type: Proto.Message
 end
 
-defmodule Main.PlDeliver do
+defmodule Proto.PlDeliver do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :sender, 1, type: Main.ProcessId
-  field :message, 2, type: Main.Message
+  field :sender, 1, type: Proto.ProcessId
+  field :message, 2, type: Proto.Message
 end
 
-defmodule Main.NetworkMessage do
+defmodule Proto.NetworkMessage do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
   field :senderHost, 1, type: :string
   field :senderListeningPort, 2, type: :int32
-  field :message, 3, type: Main.Message
+  field :message, 3, type: Proto.Message
 end
 
-defmodule Main.Message do
+defmodule Proto.Message do
   @moduledoc false
   use Protobuf, protoc_gen_elixir_version: "0.11.0", syntax: :proto3
 
-  field :type, 1, type: Main.Message.Type, enum: true
+  field :type, 1, type: Proto.Message.Type, enum: true
   field :messageUuid, 2, type: :string
   field :FromAbstractionId, 3, type: :string
   field :ToAbstractionId, 4, type: :string
   field :systemId, 5, type: :string
-  field :networkMessage, 6, type: Main.NetworkMessage
-  field :procRegistration, 7, type: Main.ProcRegistration
-  field :procInitializeSystem, 8, type: Main.ProcInitializeSystem
-  field :procDestroySystem, 9, type: Main.ProcDestroySystem
-  field :appBroadcast, 10, type: Main.AppBroadcast
-  field :appValue, 11, type: Main.AppValue
-  field :appPropose, 12, type: Main.AppPropose
-  field :appDecide, 13, type: Main.AppDecide
-  field :appRead, 14, type: Main.AppRead
-  field :appWrite, 15, type: Main.AppWrite
-  field :appReadReturn, 16, type: Main.AppReadReturn
-  field :appWriteReturn, 17, type: Main.AppWriteReturn
-  field :ucDecide, 20, type: Main.UcDecide
-  field :ucPropose, 21, type: Main.UcPropose
-  field :epAbort, 30, type: Main.EpAbort
-  field :epAborted, 31, type: Main.EpAborted
-  field :epInternalAccept, 32, type: Main.EpInternalAccept
-  field :epDecide, 33, type: Main.EpDecide
-  field :epInternalDecided, 34, type: Main.EpInternalDecided
-  field :epPropose, 35, type: Main.EpPropose
-  field :epInternalRead, 36, type: Main.EpInternalRead
-  field :epInternalState, 37, type: Main.EpInternalState
-  field :epInternalWrite, 38, type: Main.EpInternalWrite
-  field :ecInternalNack, 41, type: Main.EcInternalNack
-  field :ecInternalNewEpoch, 42, type: Main.EcInternalNewEpoch
-  field :ecStartEpoch, 43, type: Main.EcStartEpoch
-  field :bebBroadcast, 50, type: Main.BebBroadcast
-  field :bebDeliver, 51, type: Main.BebDeliver
-  field :eldTimeout, 60, type: Main.EldTimeout
-  field :eldTrust, 61, type: Main.EldTrust
-  field :nnarInternalAck, 70, type: Main.NnarInternalAck
-  field :nnarInternalRead, 71, type: Main.NnarInternalRead
-  field :nnarInternalValue, 72, type: Main.NnarInternalValue
-  field :nnarInternalWrite, 73, type: Main.NnarInternalWrite
-  field :nnarRead, 74, type: Main.NnarRead
-  field :nnarReadReturn, 75, type: Main.NnarReadReturn
-  field :nnarWrite, 76, type: Main.NnarWrite
-  field :nnarWriteReturn, 77, type: Main.NnarWriteReturn
-  field :epfdTimeout, 80, type: Main.EpfdTimeout
-  field :epfdInternalHeartbeatRequest, 81, type: Main.EpfdInternalHeartbeatRequest
-  field :epfdInternalHeartbeatReply, 82, type: Main.EpfdInternalHeartbeatReply
-  field :epfdSuspect, 83, type: Main.EpfdSuspect
-  field :epfdRestore, 84, type: Main.EpfdRestore
-  field :plDeliver, 90, type: Main.PlDeliver
-  field :plSend, 91, type: Main.PlSend
+  field :networkMessage, 6, type: Proto.NetworkMessage
+  field :procRegistration, 7, type: Proto.ProcRegistration
+  field :procInitializeSystem, 8, type: Proto.ProcInitializeSystem
+  field :procDestroySystem, 9, type: Proto.ProcDestroySystem
+  field :appBroadcast, 10, type: Proto.AppBroadcast
+  field :appValue, 11, type: Proto.AppValue
+  field :appPropose, 12, type: Proto.AppPropose
+  field :appDecide, 13, type: Proto.AppDecide
+  field :appRead, 14, type: Proto.AppRead
+  field :appWrite, 15, type: Proto.AppWrite
+  field :appReadReturn, 16, type: Proto.AppReadReturn
+  field :appWriteReturn, 17, type: Proto.AppWriteReturn
+  field :ucDecide, 20, type: Proto.UcDecide
+  field :ucPropose, 21, type: Proto.UcPropose
+  field :epAbort, 30, type: Proto.EpAbort
+  field :epAborted, 31, type: Proto.EpAborted
+  field :epInternalAccept, 32, type: Proto.EpInternalAccept
+  field :epDecide, 33, type: Proto.EpDecide
+  field :epInternalDecided, 34, type: Proto.EpInternalDecided
+  field :epPropose, 35, type: Proto.EpPropose
+  field :epInternalRead, 36, type: Proto.EpInternalRead
+  field :epInternalState, 37, type: Proto.EpInternalState
+  field :epInternalWrite, 38, type: Proto.EpInternalWrite
+  field :ecInternalNack, 41, type: Proto.EcInternalNack
+  field :ecInternalNewEpoch, 42, type: Proto.EcInternalNewEpoch
+  field :ecStartEpoch, 43, type: Proto.EcStartEpoch
+  field :bebBroadcast, 50, type: Proto.BebBroadcast
+  field :bebDeliver, 51, type: Proto.BebDeliver
+  field :eldTimeout, 60, type: Proto.EldTimeout
+  field :eldTrust, 61, type: Proto.EldTrust
+  field :nnarInternalAck, 70, type: Proto.NnarInternalAck
+  field :nnarInternalRead, 71, type: Proto.NnarInternalRead
+  field :nnarInternalValue, 72, type: Proto.NnarInternalValue
+  field :nnarInternalWrite, 73, type: Proto.NnarInternalWrite
+  field :nnarRead, 74, type: Proto.NnarRead
+  field :nnarReadReturn, 75, type: Proto.NnarReadReturn
+  field :nnarWrite, 76, type: Proto.NnarWrite
+  field :nnarWriteReturn, 77, type: Proto.NnarWriteReturn
+  field :epfdTimeout, 80, type: Proto.EpfdTimeout
+  field :epfdInternalHeartbeatRequest, 81, type: Proto.EpfdInternalHeartbeatRequest
+  field :epfdInternalHeartbeatReply, 82, type: Proto.EpfdInternalHeartbeatReply
+  field :epfdSuspect, 83, type: Proto.EpfdSuspect
+  field :epfdRestore, 84, type: Proto.EpfdRestore
+  field :plDeliver, 90, type: Proto.PlDeliver
+  field :plSend, 91, type: Proto.PlSend
 end

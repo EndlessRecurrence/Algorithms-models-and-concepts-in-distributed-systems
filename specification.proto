@@ -1,6 +1,5 @@
 syntax = "proto3";
-package main; // You can change the package name to anything you like
-option go_package = ".;main"; // This is necessary only if you use Go
+package proto; // You can change the package name to anything you like
 
 /*
 app   Custom-made application

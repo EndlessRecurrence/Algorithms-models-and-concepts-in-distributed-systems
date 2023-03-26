@@ -223,3 +223,5 @@ eexclamation: see page 78 for the "Fail-stop" algorithm
 - [Non-blocking IO - Elixir](https://elixirforum.com/t/non-blocking-io/376/8)
 
 - [What OTP pattern to use for gen_server socket broadcast?](https://stackoverflow.com/questions/24974170/what-otp-pattern-to-use-for-gen-server-socket-broadcast)
+
+- [How can the packet option of socket in Erlang accelerate the TCP transmission?](https://stackoverflow.com/questions/13878587/how-can-the-packet-option-of-socket-in-erlang-accelerate-the-tcp-transmission)
