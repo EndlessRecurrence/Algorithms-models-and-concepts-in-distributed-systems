@@ -1,9 +1,10 @@
-10:27:07.409 INF hub: Listening on 127.0.0.1:5000
-10:27:07.409 INF ref-3: listening on 127.0.0.1:5003
-10:27:07.409 INF ref-1: listening on 127.0.0.1:5001
-10:27:07.410 INF ref-2: listening on 127.0.0.1:5002
-10:27:07.412 INF hub: Received registration from ref-3
-10:27:07.412 INF hub: Received registration from ref-2
-10:27:07.412 INF hub: Received registration from ref-1
-10:27:24.302 TRC Received message data length 840829449
-10:27:34.044 ERR hub: Failed reading message
+16:56:26.244 INF hub: Listening on 127.0.0.1:5000
+16:56:26.244 INF ref-3: listening on 127.0.0.1:5003
+16:56:26.244 INF ref-2: listening on 127.0.0.1:5002
+16:56:26.244 INF ref-1: listening on 127.0.0.1:5001
+16:56:26.245 INF hub: Received registration from ref-3
+16:56:26.245 INF hub: Received registration from ref-2
+16:56:26.245 INF hub: Received registration from ref-1
+16:57:13.726 TRC Received message data length 32
+16:57:13.726 TRC hub : received bytes 321e0a093132372e302e302e3110bd441a0e08013a0a0a0667656f7267651001
+16:57:13.726 INF hub: Received registration from george-1

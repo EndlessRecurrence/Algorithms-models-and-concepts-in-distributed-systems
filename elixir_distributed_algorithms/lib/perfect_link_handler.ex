@@ -63,10 +63,12 @@ defmodule DistributedAlgorithmsApp.PerfectLinkHandler do
     {socket_connection_status, socket} = :gen_tcp.connect(address_as_tuple_of_integers, hub_port, options)
     port = Application.get_env(:elixir_distributed_algorithms, :port)
 
-    encoded_registration_message_1 =
+    encoded_registration_message=
       generate_process_registration_message("127.0.0.1", port, "george", 1)
         |> Protobuf.encode()
-    IO.inspect Protobuf.decode(encoded_registration_message_1, Proto.Message)
-    :gen_tcp.send(socket, encoded_registration_message_1)
+
+    IO.inspect Protobuf.decode(encoded_registration_message, Proto.Message)
+    :gen_tcp.send(socket, <<0,0,0,byte_size(encoded_registration_message)>> <> encoded_registration_message)
+    encoded_registration_message
   end
 end
