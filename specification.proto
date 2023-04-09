@@ -1,5 +1,5 @@
 syntax = "proto3";
-package proto; // You can change the package name to anything you like
+package Proto; // You can change the package name to anything you like
 
 /*
 app   Custom-made application

@@ -2,10 +2,11 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
   require Logger
   alias DistributedAlgorithmsApp.PerfectLinkHandler, as: PerfectLinkHandler
 
-  def accept(port) do
+  def accept(port, process_id) do
     {:ok, socket} = :gen_tcp.listen(port, [:binary, packet: 0, active: false, reuseaddr: true])
 
     Logger.info("Port #{port} is open.")
+    PerfectLinkHandler.register_process("127.0.0.1", 5000, process_id)
     loop_acceptor(socket)
   end
 
