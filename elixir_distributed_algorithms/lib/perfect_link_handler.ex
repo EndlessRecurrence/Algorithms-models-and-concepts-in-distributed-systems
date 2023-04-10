@@ -17,7 +17,8 @@ defmodule DistributedAlgorithmsApp.PerfectLinkHandler do
       %{socket: socket,
         process_id: Map.get(args, :process_id),
         owner: Map.get(args, :owner),
-        process_id_struct: %{}
+        process_id_struct: %{},
+        system_id: nil
        }
     }
   end
@@ -26,7 +27,8 @@ defmodule DistributedAlgorithmsApp.PerfectLinkHandler do
   def handle_info({:tcp, socket, packet}, state) do
     Logger.info("Received packet: #{inspect(packet)}")
     <<_::binary-size(@message_size_in_bytes), binary_message::binary>> = packet
-    network_message = Protobuf.decode(binary_message, Proto.Message).networkMessage
+    message = Protobuf.decode(binary_message, Proto.Message)
+    network_message = message.networkMessage
 
     #IO.puts "======================= Network message (type #{network_message.message.type}) ============================="
     #IO.inspect network_message.message
@@ -47,11 +49,11 @@ defmodule DistributedAlgorithmsApp.PerfectLinkHandler do
               x.owner == state.owner and x.index == state.process_id
             end)
 
-        new_state = %{state | process_id_struct: Enum.at(filtered_process_structs, 0)}
+        new_state = %{state | process_id_struct: Enum.at(filtered_process_structs, 0), system_id: message.systemId}
         IO.inspect new_state
         {:noreply, new_state}
 
-      true -> false
+      true -> {:noreply, state}
     end
   end
 
