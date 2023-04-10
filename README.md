@@ -193,6 +193,9 @@ eexclamation: see page 78 for the "Fail-stop" algorithm
 ### Resilience
 - the relation between the number f of potentially faulty processes and the total number N of processes in the system
 
+## Notes
+
+- "When the [supervisor](https://hexdocs.pm/elixir/main/Supervisor.html#module-start-and-shutdown) starts, it traverses all child specifications and then starts each child in the order they are defined. This is done by calling the function defined under the :start key in the child specification and typically defaults to start_link/1." => the "sequential synchronization" todo in the previous commit notes might be unnecessary after all, because child processes are started sequentially, perhaps the issue of an identical port for all processes is caused by something else?
 
 ## Resources
 
@@ -213,6 +216,8 @@ eexclamation: see page 78 for the "Fail-stop" algorithm
 - [Elixir - GenServer call not initiating handle_call](https://stackoverflow.com/questions/46510137/elixir-genserver-call-not-initiaing-handle-call)
 
 - [Handling TCP connections in Elixir](https://andrealeopardi.com/posts/handling-tcp-connections-in-elixir/)
+
+- [Erlang and OTP in action](https://m.blog.naver.com/PostView.naver?isHttpsRedirect=true&blogId=oidoman&logNo=220545018500)
 
 - [Communicating Sequential Processes vs. Actor model](https://dev.to/karanpratapsingh/csp-vs-actor-model-for-concurrency-1cpg)
 
