@@ -15,9 +15,10 @@ defmodule DistributedAlgorithmsApp.PerfectLinkHandler do
     :inet.setopts(socket, active: true)
     {:ok,
       %{socket: socket,
-        process_id: Map.get(args, :process_id),
+        process_index: Map.get(args, :process_index),
         owner: Map.get(args, :owner),
         process_id_struct: %{},
+        process_id_structs: [],
         system_id: nil
        }
     }
@@ -30,28 +31,37 @@ defmodule DistributedAlgorithmsApp.PerfectLinkHandler do
     message = Protobuf.decode(binary_message, Proto.Message)
     network_message = message.networkMessage
 
-    #IO.puts "======================= Network message (type #{network_message.message.type}) ============================="
-    #IO.inspect network_message.message
-    #IO.puts "======================================================================"
+    IO.puts "======================= Message ============================="
+    IO.inspect(message, limit: :infinity)
+    IO.puts "======================= Network message (type #{network_message.message.type}) ============================="
+    IO.inspect(network_message.message, label: :infinity)
+    IO.puts "======================================================================"
 
-    cond do
-      network_message.message.type == :PROC_DESTROY_SYSTEM ->
-        Logger.info("Hub destroyed process system")
+    case network_message.message.type do
+      :PROC_DESTROY_SYSTEM ->
+        Logger.info("Hub destroyed old process system")
         {:noreply, state}
 
-      network_message.message.type == :PROC_INITIALIZE_SYSTEM ->
+      :PROC_INITIALIZE_SYSTEM ->
         Logger.info("Hub initialized process system:")
         broadcasted_process_id_structs_from_hub = network_message.message.procInitializeSystem.processes
 
         filtered_process_structs =
           broadcasted_process_id_structs_from_hub
             |> Enum.filter(fn x ->
-              x.owner == state.owner and x.index == state.process_id
+              x.owner == state.owner and x.index == state.process_index
             end)
 
-        new_state = %{state | process_id_struct: Enum.at(filtered_process_structs, 0), system_id: message.systemId}
+        new_state = %{state |
+          process_id_struct: Enum.at(filtered_process_structs, 0),
+          process_id_structs: broadcasted_process_id_structs_from_hub,
+          system_id: message.systemId}
         IO.inspect new_state
         {:noreply, new_state}
+
+      :APP_BROADCAST ->
+        Logger.info("Hub orders process #{state.owner <> "-" <> Integer.to_string(state.process_index)} to broadcast value #{network_message.message.appBroadcast.value.v}.")
+        {:noreply, state}
 
       true -> {:noreply, state}
     end
@@ -101,8 +111,8 @@ defmodule DistributedAlgorithmsApp.PerfectLinkHandler do
       generate_process_registration_message("127.0.0.1", port, nickname, process_index)
         |> Protobuf.encode()
 
-    :gen_tcp.send(socket, <<0,0,0,byte_size(encoded_registration_message)>> <> encoded_registration_message)
-    Logger.info("#{nickname <> Integer.to_string(process_index)}'s registration message sent to the hub.")
+    :gen_tcp.send(socket, <<0, 0, 0, byte_size(encoded_registration_message)>> <> encoded_registration_message)
+    Logger.info("#{nickname <> "-" <> Integer.to_string(process_index)}'s registration message sent to the hub.")
   end
 
 end
