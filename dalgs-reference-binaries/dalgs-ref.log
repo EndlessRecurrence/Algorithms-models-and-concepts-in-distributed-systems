@@ -1,49 +1,51 @@
-15:04:32.656 INF hub: Listening on 127.0.0.1:5000
-15:04:32.656 INF ref-3: listening on 127.0.0.1:5003
-15:04:32.657 INF ref-1: listening on 127.0.0.1:5001
-15:04:32.657 INF ref-2: listening on 127.0.0.1:5002
-15:04:32.658 INF hub: Received registration from ref-3
-15:04:32.658 INF hub: Received registration from ref-1
-15:04:32.658 INF hub: Received registration from ref-2
-15:04:42.337 INF hub: Received registration from shoot-1
-15:04:42.337 INF hub: Received registration from shoot-3
-15:04:42.337 INF hub: Received registration from shoot-2
-15:04:47.589 INF ref-1: Starting system sys-1 ...
-15:04:47.589 INF                     ref-2: Starting system sys-1 ...
-15:04:47.590 INF                                         ref-3: Starting system sys-1 ...
-15:04:51.939 INF hub: sys-1/shoot-1 delivered 5
-15:04:51.940 INF hub: sys-1/ref-2 delivered 5
-15:04:51.940 INF hub: sys-1/ref-1 delivered 5
-15:04:51.940 INF hub: sys-1/ref-3 delivered 5
-15:04:51.941 INF hub: sys-1/shoot-2 delivered 5
-15:04:51.941 INF hub: sys-1/shoot-3 delivered 5
-15:05:01.086 INF hub: sys-1/shoot-2 delivered 1256
-15:05:01.087 INF hub: sys-1/ref-1 delivered 1256
-15:05:01.087 INF hub: sys-1/ref-2 delivered 1256
-15:05:01.087 INF hub: sys-1/ref-3 delivered 1256
-15:05:01.087 INF hub: sys-1/shoot-1 delivered 1256
-15:05:01.088 INF hub: sys-1/shoot-3 delivered 1256
-15:05:06.358 INF hub: sys-1/shoot-3 delivered 1000
-15:05:06.359 INF hub: sys-1/ref-1 delivered 1000
-15:05:06.359 INF hub: sys-1/ref-2 delivered 1000
-15:05:06.359 INF hub: sys-1/ref-3 delivered 1000
-15:05:06.360 INF hub: sys-1/shoot-1 delivered 1000
-15:05:06.360 INF hub: sys-1/shoot-2 delivered 1000
-15:05:12.677 INF hub: sys-1/ref-2 delivered 111
-15:05:12.677 INF hub: sys-1/ref-3 delivered 111
-15:05:12.677 INF hub: sys-1/ref-1 delivered 111
-15:05:12.678 INF hub: sys-1/shoot-1 delivered 111
-15:05:12.678 INF hub: sys-1/shoot-2 delivered 111
-15:05:12.678 INF hub: sys-1/shoot-3 delivered 111
-15:05:25.066 INF hub: sys-1/ref-1 delivered 999
-15:05:25.066 INF hub: sys-1/ref-3 delivered 999
-15:05:25.066 INF hub: sys-1/ref-2 delivered 999
-15:05:25.067 INF hub: sys-1/shoot-1 delivered 999
-15:05:25.067 INF hub: sys-1/shoot-3 delivered 999
-15:05:25.067 INF hub: sys-1/shoot-2 delivered 999
-15:05:33.206 INF hub: sys-1/ref-1 delivered 1992
-15:05:33.206 INF hub: sys-1/ref-2 delivered 1992
-15:05:33.206 INF hub: sys-1/ref-3 delivered 1992
-15:05:33.207 INF hub: sys-1/shoot-3 delivered 1992
-15:05:33.207 INF hub: sys-1/shoot-1 delivered 1992
-15:05:33.207 INF hub: sys-1/shoot-2 delivered 1992
+16:37:51.714 INF hub: Listening on 127.0.0.1:5000
+16:37:51.714 INF ref-3: listening on 127.0.0.1:5003
+16:37:51.714 INF ref-1: listening on 127.0.0.1:5001
+16:37:51.714 INF ref-2: listening on 127.0.0.1:5002
+16:37:51.715 INF hub: Received registration from ref-3
+16:37:51.716 INF hub: Received registration from ref-2
+16:37:51.716 INF hub: Received registration from ref-1
+16:37:57.604 INF hub: Received registration from shoot-3
+16:37:57.604 INF hub: Received registration from shoot-2
+16:37:57.604 INF hub: Received registration from shoot-1
+16:38:03.295 INF ref-1: Starting system sys-1 ...
+16:38:03.295 INF                     ref-2: Starting system sys-1 ...
+16:38:03.295 INF                                         ref-3: Starting system sys-1 ...
+16:38:13.590 INF hub: sys-1/ref-3 delivered 5
+16:38:13.591 INF hub: sys-1/ref-1 delivered 5
+16:38:13.591 INF hub: sys-1/ref-2 delivered 5
+16:38:13.593 INF hub: sys-1/shoot-1 delivered 5
+16:38:13.593 INF hub: sys-1/shoot-3 delivered 5
+16:38:13.593 INF hub: sys-1/shoot-2 delivered 5
+16:38:23.188 INF hub: sys-1/ref-3 delivered 20
+16:38:23.188 INF hub: sys-1/ref-1 delivered 20
+16:38:23.188 INF hub: sys-1/ref-2 delivered 20
+16:38:23.189 INF hub: sys-1/shoot-3 delivered 20
+16:38:23.189 INF hub: sys-1/shoot-2 delivered 20
+16:38:23.189 INF hub: sys-1/shoot-1 delivered 20
+16:38:35.048 INF hub: sys-1/ref-1 delivered 100
+16:38:35.049 INF hub: sys-1/ref-2 delivered 100
+16:38:35.049 INF hub: sys-1/ref-3 delivered 100
+16:38:35.049 INF hub: sys-1/shoot-3 delivered 100
+16:38:35.049 INF hub: sys-1/shoot-1 delivered 100
+16:38:35.049 INF hub: sys-1/shoot-2 delivered 100
+16:38:40.958 INF hub: sys-1/shoot-1 delivered 500
+16:38:40.959 INF hub: sys-1/ref-1 delivered 500
+16:38:40.959 INF hub: sys-1/ref-2 delivered 500
+16:38:40.959 INF hub: sys-1/shoot-2 delivered 500
+16:38:40.959 INF hub: sys-1/ref-3 delivered 500
+16:38:46.572 INF hub: sys-1/shoot-2 delivered 300
+16:38:46.572 INF hub: sys-1/shoot-1 delivered 300
+16:38:46.572 INF hub: sys-1/ref-1 delivered 300
+16:38:46.572 INF hub: sys-1/ref-3 delivered 300
+16:38:46.572 INF hub: sys-1/ref-2 delivered 300
+16:38:51.887 INF hub: sys-1/shoot-3 delivered 9999
+16:38:51.887 INF hub: sys-1/ref-1 delivered 9999
+16:38:51.888 INF hub: sys-1/ref-2 delivered 9999
+16:38:51.888 INF hub: sys-1/shoot-1 delivered 9999
+16:38:51.888 INF hub: sys-1/ref-3 delivered 9999
+16:38:51.888 INF hub: sys-1/shoot-2 delivered 9999
+16:43:26.517 INF ref-1: Stopping ...
+16:43:27.517 INF ref-2: Stopping ...
+16:43:28.518 INF ref-3: Stopping ...
+16:43:29.517 INF hub: Stopping ...
