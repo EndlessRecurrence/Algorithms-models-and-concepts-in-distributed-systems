@@ -19,7 +19,9 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
       hub_address: hub_address,
       hub_port: hub_port,
       process_index: process_index,
-      owner: nickname
+      owner: nickname,
+      process_id_structs: nil,
+      process_id_struct: nil
     }
 
     case PerfectLinkLayerMemory.start_link(initial_state) do

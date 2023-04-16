@@ -2,6 +2,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkHandler do
   use GenServer
   alias Protobuf
   alias DistributedAlgorithmsApp.AppLayer
+  alias DistributedAlgorithmsApp.BestEffortBroadcastLayer
   require Logger
 
   @message_size_in_bytes 4
@@ -24,64 +25,44 @@ defmodule DistributedAlgorithmsApp.PerfectLinkHandler do
     {:ok, state}
   end
 
-  defp destroy_process_system(socket) do
-    Logger.info("PERFECT_LINK_HANDLER: Hub destroyed old process system")
-    :gen_tcp.shutdown(socket, :read_write)
+  defp deliver_message(message, state) do
+    Logger.info("PERFECT_LINK_HANDLER: Delivering a message...")
+
+    updated_message = %Proto.Message {
+      systemId: message.systemId,
+      type: :PL_DELIVER,
+      plDeliver: %Proto.PlDeliver {sender: extract_sender_process_id(message, state), message: message.networkMessage.message}
+    }
+
+    IO.inspect updated_message, label: "Updated plDeliver message from PLL.deliver_message", limit: :infinity
+
+    case Map.get(message, :ToAbstractionId) do
+      "app.pl" -> AppLayer.receive_message(updated_message, state)
+      "app.beb.pl" -> BestEffortBroadcastLayer.receive_message(updated_message, state)
+    end
   end
 
-  defp initialize_process_system(socket, message, state) do
-    Logger.info("PERFECT_LINK_HANDLER: Hub initialized process system")
-    pl_deliver_message =
-      message
-      |> update_in([Access.key!(:networkMessage), Access.key!(:message), Access.key!(:procInitializeSystem)], fn _ -> nil end)
-      |> update_in([Access.key!(:type)], fn _ -> :PL_DELIVER end)
-      |> update_in([Access.key!(:plDeliver)], fn _ -> message.networkMessage.message.procInitializeSystem end)
+  defp extract_sender_process_id(message, state) do
+    sender_host = message.networkMessage.senderHost
+    sender_port = message.networkMessage.senderListeningPort
+    sender_process_id_struct = struct(Proto.ProcessId, host: sender_host, port: sender_port, owner: "hub", index: nil, rank: nil)
 
-    AppLayer.receive_process_initialization_message_and_save_to_memory(pl_deliver_message, state)
-    :gen_tcp.shutdown(socket, :read_write)
-  end
-
-  defp receive_and_share_broadcast_message_with_all_processes(socket, message, state) do
-    saved_state = GenServer.call(state.pl_memory_pid, :get_state)
-    process_id_struct = Map.get(saved_state, :process_id_struct)
-    process_id_structs = Map.get(saved_state, :process_id_structs)
-    process_name = saved_state.owner <> "-" <> Integer.to_string(saved_state.process_index)
-    value = message.networkMessage.message.appBroadcast.value
-    Logger.info("PERFECT_LINK_HANDLER: #{process_name} received an APP_BROADCAST message from the hub containing the value #{value.v}")
-
-    updated_message = message
-    |> update_in([Access.key!(:networkMessage), Access.key!(:message), Access.key!(:appBroadcast)], fn _ -> nil end)
-    |> update_in([Access.key!(:networkMessage), Access.key!(:message), Access.key!(:type)], fn _ -> :APP_VALUE end)
-    |> update_in([Access.key!(:networkMessage), Access.key!(:message), Access.key!(:appValue)], fn _ -> struct(Proto.AppValue, value: value) end)
-
-    send_broadcast_value_to_hub(saved_state.hub_address, saved_state.hub_port, updated_message, process_id_struct)
-    send_broadcast_value_to_other_processes(process_id_structs, updated_message, process_id_struct)
-
-    :gen_tcp.shutdown(socket, :read_write)
-  end
-
-  defp receive_broadcast_message_and_send_it_to_the_hub(socket, message, state) do
-    Logger.info("PERFECT_LINK_HANDLER: Received the APP_VALUE message")
-    saved_state = GenServer.call(state.pl_memory_pid, :get_state)
-    send_broadcast_value_to_hub(saved_state.hub_address, saved_state.hub_port, message, saved_state.process_id_struct)
-
-    :gen_tcp.shutdown(socket, :read_write)
+    case state.process_id_structs do
+      nil -> sender_process_id_struct
+      structs ->
+        condition_lambda = fn x -> x.owner == state.owner and x.index == state.process_index end
+        Enum.filter(structs, condition_lambda) |> Enum.at(0)
+    end
   end
 
   @impl true
-  def handle_info({:tcp, socket, packet}, state) do
+  def handle_info({:tcp, _socket, packet}, state) do
     Logger.info("PERFECT_LINK_HANDLER: Received packet #{inspect(packet)}")
     <<_::binary-size(@message_size_in_bytes), binary_message::binary>> = packet
     message = Protobuf.decode(binary_message, Proto.Message)
-    network_message = message.networkMessage
+    IO.inspect message, label: "Received message", limit: :infinity
 
-    case network_message.message.type do
-      :PROC_DESTROY_SYSTEM -> destroy_process_system(socket)
-      :PROC_INITIALIZE_SYSTEM -> initialize_process_system(socket, message, state)
-      :APP_BROADCAST -> receive_and_share_broadcast_message_with_all_processes(socket, message, state)
-      :APP_VALUE -> receive_broadcast_message_and_send_it_to_the_hub(socket, message, state)
-      _ -> raise RuntimeError, message: "PERFECT_LINK_HANDLER_ERROR: Unknown message type"
-    end
+    deliver_message(message, state)
 
     {:noreply, state}
   end
@@ -98,40 +79,54 @@ defmodule DistributedAlgorithmsApp.PerfectLinkHandler do
     {:stop, {:shutdown, "Tcp error: #{inspect(reason)}"}, state}
   end
 
-  defp send_broadcast_value_to_other_processes([], _, _), do: :ok
-  defp send_broadcast_value_to_other_processes([process | list_of_processes], message, this_process) when process.rank != this_process.rank do
-    address_bytes = Regex.split(~r/\./, process.host)
-    address_as_tuple_of_integers = Enum.map(address_bytes, fn byte -> String.to_integer(byte) end) |> List.to_tuple()
-    options = [:binary, active: false, packet: :raw]
-    {_socket_connection_status, socket} = :gen_tcp.connect(address_as_tuple_of_integers, process.port, options)
+  def send_broadcast_value_to_hub(message, state) do
+    # checked
+    destination = message.plSend.destination
+    message_to_broadcast = %Proto.Message {
+      systemId: state.system_id,
+      type: :NETWORK_MESSAGE,
+      FromAbstractionId: "app.pl",
+      ToAbstractionId: "app.pl",
+      networkMessage: %Proto.NetworkMessage {
+        senderHost: state.process_id_struct.host,
+        senderListeningPort: state.process_id_struct.port,
+        message: message.plSend.message
+      }
+    }
 
-    encoded_broadcast_message = message
-      |> update_in([Access.key!(:FromAbstractionId)], fn _ -> "app.beb.pl" end)
-      |> update_in([Access.key!(:ToAbstractionId)], fn _ -> "app.beb.pl" end)
-      |> update_in([Access.key!(:networkMessage), Access.key!(:message), Access.key!(:FromAbstractionId)], fn _ -> "app" end)
-      |> update_in([Access.key!(:networkMessage), Access.key!(:message), Access.key!(:ToAbstractionId)], fn _ -> "app" end)
-      |> Protobuf.encode()
+    encoded_broadcast_message = Protobuf.encode(message_to_broadcast)
 
-    :gen_tcp.send(socket, <<0, 0, 0, byte_size(encoded_broadcast_message)>> <> encoded_broadcast_message)
-    Logger.info("PERFECT_LINK_HANDLER: Process #{this_process.owner}-#{Integer.to_string(this_process.index)} sent broadcast message to process #{process.owner}-#{Integer.to_string(process.index)}.")
-    send_broadcast_value_to_other_processes(list_of_processes, message, this_process)
-  end
-  defp send_broadcast_value_to_other_processes([_ | list_of_processes], message, this_process), do: send_broadcast_value_to_other_processes(list_of_processes, message, this_process)
-
-  defp send_broadcast_value_to_hub(hub_address, hub_port, message, this_process) do
-    hub_address_bytes = Regex.split(~r/\./, hub_address)
+    hub_address_bytes = Regex.split(~r/\./, destination.host)
     hub_address_as_tuple_of_integers = Enum.map(hub_address_bytes, fn byte -> String.to_integer(byte) end) |> List.to_tuple()
     options = [:binary, active: false, packet: :raw]
-    {_socket_connection_status, socket} = :gen_tcp.connect(hub_address_as_tuple_of_integers, hub_port, options)
-
-    updated_message = message
-      |> update_in([Access.key!(:networkMessage), Access.key!(:senderHost)], fn _ -> this_process.host end)
-      |> update_in([Access.key!(:networkMessage), Access.key!(:senderListeningPort)], fn _ -> this_process.port end)
-
-    encoded_broadcast_message = updated_message |> Protobuf.encode()
+    {_socket_connection_status, socket} = :gen_tcp.connect(hub_address_as_tuple_of_integers, destination.port, options)
 
     :gen_tcp.send(socket, <<0, 0, 0, byte_size(encoded_broadcast_message)>> <> encoded_broadcast_message)
-    Logger.info("PERFECT_LINK_HANDLER: #{this_process.owner}-#{Integer.to_string(this_process.index)} sent confirmation message to the hub")
+    Logger.info("PERFECT_LINK_HANDLER: #{state.process_id_struct.owner}-#{Integer.to_string(state.process_id_struct.index)} sent confirmation message to the hub")
+  end
+
+  def send_broadcast_value_to_process(message, state) do
+    destination = message.plSend.destination
+    message_to_broadcast = %Proto.Message {
+      systemId: state.system_id,
+      type: :NETWORK_MESSAGE,
+      FromAbstractionId: "app.beb.pl",
+      ToAbstractionId: "app.beb.pl",
+      networkMessage: %Proto.NetworkMessage {
+        senderHost: state.process_id_struct.host,
+        senderListeningPort: state.process_id_struct.port,
+        message: message.plSend.message
+      }
+    }
+
+    encoded_broadcast_message = Protobuf.encode(message_to_broadcast)
+
+    process_address_bytes = Regex.split(~r/\./, destination.host)
+    process_address_as_tuple_of_integers = Enum.map(process_address_bytes, fn byte -> String.to_integer(byte) end) |> List.to_tuple()
+    options = [:binary, active: false, packet: :raw]
+    {_socket_connection_status, socket} = :gen_tcp.connect(process_address_as_tuple_of_integers, destination.port, options)
+
+    :gen_tcp.send(socket, <<0, 0, 0, byte_size(encoded_broadcast_message)>> <> encoded_broadcast_message)
   end
 
 end

@@ -21,6 +21,14 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayerMemory do
   end
 
   @impl true
+  def handle_cast({:save_system_id, system_id}, state) do
+    Logger.info("PERFECT_LINK_LAYER_MEMORY: SAVE_SYSTEM_ID")
+    new_state = state
+      |> Map.put(:system_id, system_id)
+    {:noreply, new_state}
+  end
+
+  @impl true
   def handle_call(:get_state, _from, state) do
     Logger.info("PERFECT_LINK_LAYER_MEMORY: GET_STATE EVENT")
     {:reply, state, state}
