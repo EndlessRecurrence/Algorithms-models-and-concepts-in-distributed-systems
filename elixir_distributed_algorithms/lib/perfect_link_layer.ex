@@ -1,7 +1,9 @@
 defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
   require Logger
-  alias DistributedAlgorithmsApp.PerfectLinkHandler
-  alias DistributedAlgorithmsApp.PerfectLinkLayerMemory
+  alias DistributedAlgorithmsApp.PerfectLinkConnectionHandler
+  alias DistributedAlgorithmsApp.ProcessMemory
+  alias DistributedAlgorithmsApp.AppLayer
+  alias DistributedAlgorithmsApp.BestEffortBroadcastLayer
 
   def accept(port, process_index, nickname, hub_address, hub_port) do
     {:ok, socket} = :gen_tcp.listen(port, [:binary, packet: 0, active: false, reuseaddr: true])
@@ -24,7 +26,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
       process_id_struct: nil
     }
 
-    case PerfectLinkLayerMemory.start_link(initial_state) do
+    case ProcessMemory.start_link(initial_state) do
       {:ok, pid} -> pid
       {:error, {:already_started, pid}} -> "Process #{pid} already started."
       {:error, reason} -> raise RuntimeError, message: reason
@@ -37,9 +39,9 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
     Logger.info("PERFECT_LINK_LAYER: New connection accepted.")
 
     {:ok, pid} =
-      DynamicSupervisor.start_child(PerfectLinkHandler.DynamicSupervisor, %{
-        id: PerfectLinkHandler,
-        start: {PerfectLinkHandler, :start_link, [%{socket: client, pl_memory_pid: pl_memory_pid}]},
+      DynamicSupervisor.start_child(PerfectLinkConnectionHandler.DynamicSupervisor, %{
+        id: PerfectLinkConnectionHandler,
+        start: {PerfectLinkConnectionHandler, :start_link, [%{socket: client, pl_memory_pid: pl_memory_pid}]},
         type: :worker,
         restart: :transient
       })
@@ -79,4 +81,81 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
     Logger.info("PERFECT_LINK_LAYER: #{nickname}-#{Integer.to_string(process_index)}'s registration message sent to the hub.")
   end
 
+  def deliver_message(message, state) do
+    Logger.info("PERFECT_LINK_LAYER: Delivering a message...")
+
+    updated_message = %Proto.Message {
+      systemId: message.systemId,
+      type: :PL_DELIVER,
+      plDeliver: %Proto.PlDeliver {sender: extract_sender_process_id(message, state), message: message.networkMessage.message}
+    }
+
+    case Map.get(message, :ToAbstractionId) do
+      "app.pl" -> AppLayer.receive_message(updated_message, state)
+      "app.beb.pl" -> BestEffortBroadcastLayer.receive_message(updated_message, state)
+    end
+  end
+
+  def extract_sender_process_id(message, state) do
+    sender_host = message.networkMessage.senderHost
+    sender_port = message.networkMessage.senderListeningPort
+    sender_process_id_struct = struct(Proto.ProcessId, host: sender_host, port: sender_port, owner: "hub", index: nil, rank: nil)
+
+    case state.process_id_structs do
+      nil -> sender_process_id_struct
+      structs ->
+        condition_lambda = fn x -> x.owner == state.owner and x.index == state.process_index end
+        Enum.filter(structs, condition_lambda) |> Enum.at(0)
+    end
+  end
+
+  def send_broadcast_value_to_hub(message, state) do
+    destination = message.plSend.destination
+    message_to_broadcast = %Proto.Message {
+      systemId: state.system_id,
+      type: :NETWORK_MESSAGE,
+      FromAbstractionId: "app.pl",
+      ToAbstractionId: "app.pl",
+      networkMessage: %Proto.NetworkMessage {
+        senderHost: state.process_id_struct.host,
+        senderListeningPort: state.process_id_struct.port,
+        message: message.plSend.message
+      }
+    }
+
+    encoded_broadcast_message = Protobuf.encode(message_to_broadcast)
+
+    hub_address_bytes = Regex.split(~r/\./, destination.host)
+    hub_address_as_tuple_of_integers = Enum.map(hub_address_bytes, fn byte -> String.to_integer(byte) end) |> List.to_tuple()
+    options = [:binary, active: false, packet: :raw]
+    {_socket_connection_status, socket} = :gen_tcp.connect(hub_address_as_tuple_of_integers, destination.port, options)
+
+    :gen_tcp.send(socket, <<0, 0, 0, byte_size(encoded_broadcast_message)>> <> encoded_broadcast_message)
+    Logger.info("PERFECT_LINK_LAYER: #{state.process_id_struct.owner}-#{Integer.to_string(state.process_id_struct.index)} sent confirmation message to the hub")
+  end
+
+  def send_broadcast_value_to_process(message, state) do
+    destination = message.plSend.destination
+    message_to_broadcast = %Proto.Message {
+      systemId: state.system_id,
+      type: :NETWORK_MESSAGE,
+      FromAbstractionId: "app.beb.pl",
+      ToAbstractionId: "app.beb.pl",
+      networkMessage: %Proto.NetworkMessage {
+        senderHost: state.process_id_struct.host,
+        senderListeningPort: state.process_id_struct.port,
+        message: message.plSend.message
+      }
+    }
+
+    encoded_broadcast_message = Protobuf.encode(message_to_broadcast)
+
+    process_address_bytes = Regex.split(~r/\./, destination.host)
+    process_address_as_tuple_of_integers = Enum.map(process_address_bytes, fn byte -> String.to_integer(byte) end) |> List.to_tuple()
+    options = [:binary, active: false, packet: :raw]
+    {_socket_connection_status, socket} = :gen_tcp.connect(process_address_as_tuple_of_integers, destination.port, options)
+
+    :gen_tcp.send(socket, <<0, 0, 0, byte_size(encoded_broadcast_message)>> <> encoded_broadcast_message)
+    Logger.info("PERFECT_LINK_LAYER: #{state.process_id_struct.owner}-#{Integer.to_string(state.process_id_struct.index)} sent AppValue to another process.")
+  end
 end

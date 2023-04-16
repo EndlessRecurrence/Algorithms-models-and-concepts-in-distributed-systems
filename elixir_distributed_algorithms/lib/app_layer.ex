@@ -1,11 +1,10 @@
 defmodule DistributedAlgorithmsApp.AppLayer do
   alias Protobuf
   alias DistributedAlgorithmsApp.BestEffortBroadcastLayer
-  alias DistributedAlgorithmsApp.PerfectLinkHandler
+  alias DistributedAlgorithmsApp.PerfectLinkLayer
   require Logger
 
   def receive_message(message, state) do
-    # checked
     case message.type do
       :PL_DELIVER -> receive_pl_deliver_message(message, state)
       :BEB_DELIVER -> receive_beb_deliver_message(message, state)
@@ -13,7 +12,6 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   end
 
   defp receive_pl_deliver_message(message, state) do
-    # checked
     case message.plDeliver.message.type do
       :PROC_DESTROY_SYSTEM -> Logger.info("APP_LAYER: Hub destroyed process system.")
       :PROC_INITIALIZE_SYSTEM -> initialize_system(message, state)
@@ -22,14 +20,12 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   end
 
   defp receive_beb_deliver_message(message, state) do
-    # checked
     case message.bebDeliver.message.type do
       :APP_VALUE -> receive_app_value_message(message, state)
     end
   end
 
   defp send_broadcast_message(message, state) do
-    # checked
     app_value_message = %Proto.Message {type: :APP_VALUE, appValue: %Proto.AppValue {value: message.plDeliver.message.appBroadcast.value}}
 
     broadcasted_message = %Proto.Message {
@@ -50,25 +46,10 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       }
     }
 
-    PerfectLinkHandler.send_broadcast_value_to_hub(response_message_to_hub, state)
+    PerfectLinkLayer.send_broadcast_value_to_hub(response_message_to_hub, state)
   end
 
   def receive_app_value_message(message, state) do
-    # %Proto.Message {
-    #   type: :BEB_DELIVER,
-    #   FromAbstractionId: "app.beb",
-    #   ToAbstractionId: "app",
-    #   bebDeliver: %Proto.BebDeliver {
-    #     sender: sender,
-    #     message: %Proto.Message {
-    #       type: :APP_VALUE,
-    #       appValue: %Proto.AppValue {
-    #         value: %Proto.Value{defined: true, v: -1}
-    #       }
-    #     }
-    #   }
-    # }
-
     broadcasted_message = %Proto.Message {
       type: :PL_SEND,
       FromAbstractionId: "app",
@@ -79,11 +60,10 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       }
     }
 
-    PerfectLinkHandler.send_broadcast_value_to_hub(broadcasted_message, state)
+    PerfectLinkLayer.send_broadcast_value_to_hub(broadcasted_message, state)
   end
 
   def initialize_system(message, state) do
-    # checked
     IO.inspect message, label: "APP_LAYER - PL_DELIVER_MESSAGE", limit: :infinity
     broadcasted_process_id_structs_from_hub = message.plDeliver.message.procInitializeSystem.processes
 

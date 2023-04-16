@@ -1,7 +1,7 @@
 defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
   alias Protobuf
   alias DistributedAlgorithmsApp.AppLayer
-  alias DistributedAlgorithmsApp.PerfectLinkHandler
+  alias DistributedAlgorithmsApp.PerfectLinkLayer
 
   def receive_message(message, state) do
     deliver_message(message, state)
@@ -33,6 +33,6 @@ defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
       }
     }
 
-    PerfectLinkHandler.send_broadcast_value_to_process(updated_message, state)
+    PerfectLinkLayer.send_broadcast_value_to_process(updated_message, state)
   end
 end
