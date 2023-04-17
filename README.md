@@ -193,9 +193,27 @@ eexclamation: see page 78 for the "Fail-stop" algorithm
 ### Resilience
 - the relation between the number f of potentially faulty processes and the total number N of processes in the system
 
-## Notes
+## [Elixir scheduler inner workings (page 161)](https://www.manning.com/books/elixir-in-action-second-edition)
 
-- "When the [supervisor](https://hexdocs.pm/elixir/main/Supervisor.html#module-start-and-shutdown) starts, it traverses all child specifications and then starts each child in the order they are defined. This is done by calling the function defined under the :start key in the child specification and typically defaults to start_link/1." => the "sequential synchronization" todo in the previous commit notes might be unnecessary after all, because child processes are started sequentially, perhaps the issue of an identical port for all processes is caused by something else?
+"Each BEAM scheduler is in reality an OS thread that manages the execution of BEAM processes. By default, BEAM uses only as many schedulers as there are logical processors available. You can change these settings via various Erlang emulator flags. To provide those flags, you can use the following syntax:
+
+```$ iex --erl "put Erlang emulator flags here"```
+
+A list of all Erlang flags can be found at http://erlang.org/doc/man/erl.html. In general, you can assume that there are n schedulers that run m processes, with m most often being significantly larger than n. This is called m:n threading, and it reflects the fact that you run a large number of logical microthreads using a smaller number of OS threads, as illustrated in figure 5.4.
+
+![BEAM as a single OS process](Images/beamasasingleosprocess.png)
+
+Internally, each scheduler maintains a run queue, which is something like a list of BEAM processes it’s responsible for. Each process gets a small execution window, after which it’s preempted and another process is executed. The execution window is approximately 2,000 function calls (internally called reductions). Because you’re dealing with a functional language where functions are very small, it’s clear that context switching happens often, generally in less than 1 millisecond. 
+
+This promotes the responsiveness of BEAM powered systems. If one process performs a long CPU-bound operation, such as computing the value of pi to a billion decimals, it won’t block the entire scheduler, and other processes shouldn’t be affected. 
+
+There are some special cases when a process will implicitly yield execution to the scheduler before its execution time is up. The most notable situation is when using receive. Another example is a call to the *:timer.sleep/1* function. In both cases, the process is suspended, and the scheduler can run other processes. 
+
+Another important case of implicit yielding involves I/O operations, which are internally executed on separate threads called async threads. When issuing an I/O call, the calling process is preempted, and other processes get the execution slot. After the I/O operation finishes, the scheduler resumes the calling process. A great benefit of this is that your I/O code looks synchronous, while under the hood it still runs asynchronously. By default, BEAM fires up 10 async threads, but you can change this via the *+A n* Erlang flag. 
+
+Additionally, if your OS supports it, you can rely on a kernel poll such as epoll or kqueue, which takes advantage of the OS kernel for nonblocking I/O. You can request the use of a kernel poll by providing the *+K true* Erlang flag when you start the BEAM. 
+Implicit yields provide additional benefits. If most processes are suspended most of the time — for example, while the kernel is doing I/O or while many processes are waiting for messages — BEAM schedulers are even more efficient and have bigger overall throughput."
+
 
 ## Resources
 
@@ -232,3 +250,5 @@ eexclamation: see page 78 for the "Fail-stop" algorithm
 - [How can the packet option of socket in Erlang accelerate the TCP transmission?](https://stackoverflow.com/questions/13878587/how-can-the-packet-option-of-socket-in-erlang-accelerate-the-tcp-transmission)
 
 - [How is a process in Elixir different from system threads in other languages?](https://elixirforum.com/t/how-is-process-in-elixir-different-with-system-thread-in-other-language/28076)
+
+- [Why is data deep-copied when sending it to another process?](https://elixirforum.com/t/why-is-data-deep-copied-when-sending-to-another-process/26330)
