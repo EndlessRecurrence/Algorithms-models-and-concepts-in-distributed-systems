@@ -3,40 +3,9 @@ Coursework for the AMCDS subject.
 
 ## Notes
 
-### Abstract API notions used in the book
+### Abstract layer notions used in the book
 
-```
-                                                  ▲
-       │                                          │
-       │                                          │
-       │                                          │
-       │                                          │
-       │                                          │
-       │                                          │
-┌──────▼──────────────────────────────────────────┴───┐
-│   send                                    deliver   │
-│                                                     │
-│                                                     │
-│                                                     │
-│                                                     │
-│                      Layer n                        │
-│                                                     │
-│                                                     │
-│                                                     │
-│                                                     │
-│                                                     │
-│ invoke                                   receive    │
-└──────┬──────────────────────────────────────────▲───┘
-       │                                          │
-       │                                          │
-       │                                          │
-       │                                          │
-       │                                          │
-       │                                          │
-       ▼                                          │
-```
-
-
+![Abstract layer](Images/abstractlayernotion.png)
 
 ### Types of distributed algorithms
 
