@@ -157,7 +157,95 @@ Properties:
 		RB4: Agreement: If a message m is delivered by some correct process, then m is eventually delivered by every correct process.
 ```
 
-eexclamation: see page 78 for the "Fail-stop" algorithm 
+:exclamation: see page 78 for the "Fail-stop" algorithm 
+
+### (1, N) regular register
+
+- one specific process p can invoke a write operation on the register, and any process can invoke a read operation on the register
+- the notion of regularity is not considered for multiple writers
+- Every read operation that is not concurrent with any write operation returns the last value written. If there is a concurrent write, the read is allowed to return the last value written or the value concurrently being written. Note that if a process invokes a write and crashes (without recovering), the write is considered to be concurrent with any read that did not precede it. Hence, such a read can return the value that was supposed to be written by the failed write or the last value written before the failed write was invoked. In any case, the returned value must be read from some write operation invoked on the register. That is, the value returned by any read operation must be a value that some process has tried to write (even if the write was not complete), and it cannot be invented out of thin air. The value may be the initial value ⊥ of the register.
+
+```
+Module:
+	Name: (1, N)-RegularRegister, instance onrr.
+
+Events:
+	Request: <onrr, Read>: Invokes a read operation on the register.
+	Request: <onrr, Write | v>: Invokes a write operation with value v on the register.
+	Indication: <onrr, ReadReturn | v>: Completes a read operation on the register
+	with return value v.
+	Indication: <onrr, WriteReturn>: Completes a write operation on the register.
+
+Properties:
+	ONRR1: Termination: If a correct process invokes an operation, then the operation
+	eventually completes.
+	ONRR2: Validity: A read that is not concurrent with a write returns the last value
+	written; a read that is concurrent with a write returns the last value written or the
+	value concurrently written.
+```
+
+:exclamation: see page 144 for the "Read-One Write-All" regular register
+:exclamation: see page 146 for the "Majority-voting" regular register 
+
+### (1, N) atomic register
+
+- A (1, N) atomic register is a regular register that, in addition to the properties of a regular register ensures a specific ordering property
+
+```
+Module:
+	Name: (1, N)-AtomicRegister, instance onar.
+
+Events:
+	Request: <onar, Read>: Invokes a read operation on the register.
+	Request: <onar, Write | v>: Invokes a write operation with value v on the register.
+	Indication: <onar, ReadReturn | v>: Completes a read operation on the register with return value v.
+	Indication: <onar, WriteReturn>: Completes a write operation on the register.
+
+Properties:
+	ONAR1–ONAR2: Same as properties ONRR1–ONRR2 of a (1, N) regular register
+	ONAR3: Ordering: If a read returns a value v and a subsequent read returns a
+	value w, then the write of w does not precede the write of v.
+```
+
+### (N, N) atomic register 
+
+An (N, N) atomic register abstraction (NNAR) links together read and write operations in a stricter way than its single-writer relative. This register abstraction ensures that every failed write appears either as if it was never invoked or as if it completed, i.e., as if the operation was invoked and terminated. Clearly, a failed read operation may always appear as if it was never invoked. In addition, even in the face of con- currency, it must be that the values returned by reads could have been returned by a hypothetical serial execution, where every operation takes place at an indivisible point in time, which lies between the invocation event and the completion event of the operation. An (N, N) atomic register is a strict generalization of a (1, N) atomic register in the sense that every execution of a (1, N) atomic register is also an execution of an (N, N) atomic register but not vice versa.
+
+The hypothetical serial execution mentioned before is called a linearization of the actual execution. More precisely, a linearization of an execution is defined as a sequence of complete operations that appear atomically, one after the other, which contains at least all complete operations of the actual execution (and possibly some operations that were incomplete) and satisfies the following conditions:
+
+1. every read returns the last value written; and
+2. for any two operations o and o', if o precedes o' in the actual execution, then o also appears before o' in the linearization.
+
+We call an execution linearizable if there is a way to linearize it like this. With this notion, one can reformulate the atomicity property of an (N, N) atomic register as:
+```
+	NNAR2’: Atomicity: Every execution of the register is linearizable.
+```
+
+To implement (N, N) atomic registers, we adopt the same modular approach as for implementing (1, N) atomic registers. 
+
+```
+Module:
+	Name: (N, N)-AtomicRegister, instance nnar.
+
+Events:
+	Request: <nnar, Read>: Invokes a read operation on the register.
+	Request: <nnar, Write | v>: Invokes a write operation with value v on the register.
+	Indication: <nnar, ReadReturn | v>: Completes a read operation on the register
+	with return value v.
+	Indication: <nnar, WriteReturn>: Completes a write operation on the register.
+
+Properties:
+	NNAR1: Termination: Same as property ONAR1 of a (1, N) atomic register
+	NNAR2: Atomicity: Every read operation returns the value that was written most
+	recently in a hypothetical execution, where every failed operation appears to be
+	complete or does not appear to have been invoked at all, and every complete ope-
+	ration appears to have been executed at some instant between its invocation and its
+	completion.
+```
+
+### [Fault-tolerance](https://en.wikipedia.org/wiki/Fault_tolerance)
+
+- the property that enables a system to continue operating properly in the event of the failure of one or more faults within some of its components. If its operating quality decreases at all, the decrease is proportional to the severity of the failure, as compared to a naively designed system, in which even a small failure can cause total breakdown. Fault tolerance is particularly sought after in high-availability, mission-critical, or even life-critical systems. The ability of maintaining functionality when portions of a system break down is referred to as graceful degradation.
 
 ### Resilience
 - the relation between the number f of potentially faulty processes and the total number N of processes in the system

@@ -1,6 +1,6 @@
-# Main
+# Distributed algorithms in Elixir
 
-**TODO: Add description**
+A collection of distributed algorithms written in Elixir using Erlang's :gen_tcp module and GenServers.
 
 ## Installation
 
