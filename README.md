@@ -271,6 +271,38 @@ Another important case of implicit yielding involves I/O operations, which are i
 Additionally, if your OS supports it, you can rely on a kernel poll such as epoll or kqueue, which takes advantage of the OS kernel for nonblocking I/O. You can request the use of a kernel poll by providing the *+K true* Erlang flag when you start the BEAM. 
 Implicit yields provide additional benefits. If most processes are suspended most of the time — for example, while the kernel is doing I/O or while many processes are waiting for messages — BEAM schedulers are even more efficient and have bigger overall throughput."
 
+## [What is linearizability in distributed systems?](https://www.educative.io/answers/what-is-linearizability-in-distributed-systems)
+
+### What is consistency?
+
+We can guarantee that the system stores the most recently updated data on a single computer. However, in a distributed system, data is shared and replicated across many computing nodes.
+
+Consistency is a property of the distributed system, which says that every server should have the same view regardless of any client updates to the data stored in the system.
+
+Strong consistency would mean that the distributed system converges on a single value, and the client always reads the latest data.
+
+### Consistency models
+
+A consistency model is a contract between a distributed system and the applications that run on it. This model is a set of guarantees made by the distributed system. There are various consistency models employed by different distributed systems such as linearizability, serializability, causal consistency, and eventual consistency. 
+
+### Linearizability
+
+Linearizability is the strongest form of consistency. This means that all operations are executed in a way as if executed on a single machine, despite the data being distributed across multiple replicas. As a result, every operation returns an up-to-date value.
+
+All replicas execute operations in some total ordering. This entire order preserves the real-time ordering between operations.
+
+- If operation A completes before operation B starts, the system orders A before B in real-time.
+- If neither A nor B completes before the other starts, then there is no guarantee that these events will be ordered in real-time. However, there would still be some total order.
+
+### Example
+
+In the following example, we have a distributed system consisting of three different processes: P1, P2, and P3. Client A writes a value 1 to an object A. Given that the system is linearizable, once the write operation completes, all later reads, by global time, should return the value of that write or the value of the later write operation. So, when client B reads A's value, it returns 1. Once a read operation returns a particular value, all later reads should return that value or value of the later write operation.
+
+![Linearizability example](Images/linearizability.png)
+
+### Tradeoffs
+
+There is a tension between strong consistency and performance in a normal operation. Linearizability requires the system to converge on a single state. This takes longer, as overhead communication results in high latency during normal operation. Such a consistency model would not work for a real-time application such as Augmented Reality, or Virtual Reality, because such applications require extremely low latency. On the other hand, if an application demands strict correctness, such as a banking system, it is important to provide strong consistency guarantees.
 
 ## Resources
 
