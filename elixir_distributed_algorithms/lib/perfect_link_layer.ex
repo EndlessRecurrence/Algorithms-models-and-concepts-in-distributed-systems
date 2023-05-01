@@ -4,6 +4,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
   alias DistributedAlgorithmsApp.ProcessMemory
   alias DistributedAlgorithmsApp.AppLayer
   alias DistributedAlgorithmsApp.BestEffortBroadcastLayer
+  alias DistributedAlgorithmsApp.TimestampRankPair
 
   def accept(port, process_index, nickname, hub_address, hub_port) do
     {:ok, socket} = :gen_tcp.listen(port, [:binary, packet: 0, active: false, reuseaddr: true])
@@ -23,7 +24,16 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
       process_index: process_index,
       owner: nickname,
       process_id_structs: nil,
-      process_id_struct: nil
+      process_id_struct: nil,
+      timestamp_rank_struct: struct(TimestampRankPair),
+      acknowledgments: 0,
+      value_to_be_written: nil,
+      request_id: 0,
+      read_list: [],
+      value_to_be_read: nil,
+      reading: false,
+      register_to_be_written: nil,
+      registers: %{}
     }
 
     case ProcessMemory.start_link(initial_state) do
@@ -90,26 +100,35 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
       plDeliver: %Proto.PlDeliver {sender: extract_sender_process_id(message, state), message: message.networkMessage.message}
     }
 
-    case Map.get(message, :ToAbstractionId) do
-      "app.pl" -> AppLayer.receive_message(updated_message, state)
-      "app.beb.pl" -> BestEffortBroadcastLayer.receive_message(updated_message, state)
+    IO.inspect updated_message, label: "Message received from hub", limit: :infinity
+    keys = [:plDeliver, :message, :ToAbstractionId]
+    to_abstraction_id = Map.get(message, :ToAbstractionId)
+    deep_to_abstraction_id = get_in(message, Enum.map(keys, &Access.key!(&1)))
+    cond do
+      to_abstraction_id == "app.pl" -> AppLayer.receive_message(updated_message, state)
+      to_abstraction_id == "app.beb.pl" -> BestEffortBroadcastLayer.receive_message(updated_message, state)
+      Regex.run(~r/nnar/, to_abstraction_id) != nil -> BestEffortBroadcastLayer.receive_message(updated_message, state)
+      Regex.run(~r/nnar/, deep_to_abstraction_id) != nil -> BestEffortBroadcastLayer.receive_message(updated_message, state)
+      true -> AppLayer.receive_message(updated_message, state)
     end
   end
 
   def extract_sender_process_id(message, state) do
     sender_host = message.networkMessage.senderHost
     sender_port = message.networkMessage.senderListeningPort
-    sender_process_id_struct = struct(Proto.ProcessId, host: sender_host, port: sender_port, owner: "hub", index: nil, rank: nil)
+    sender_process_id_struct = struct(Proto.ProcessId, host: sender_host, port: sender_port, owner: nil, index: nil, rank: nil)
 
     case state.process_id_structs do
-      nil -> sender_process_id_struct
+      nil ->
+        sender_process_id_struct
+        |> update_in([Access.key!(:owner)], fn _ -> "hub" end)
       structs ->
-        condition_lambda = fn x -> x.owner == state.owner and x.index == state.process_index end
+        condition_lambda = fn x -> x.host == sender_host and x.port == sender_port end
         Enum.filter(structs, condition_lambda) |> Enum.at(0)
     end
   end
 
-  def send_broadcast_value_to_hub(message, state) do
+  def send_value_to_hub(message, state) do
     destination = message.plSend.destination
     message_to_broadcast = %Proto.Message {
       systemId: state.system_id,
@@ -134,13 +153,15 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
     Logger.info("PERFECT_LINK_LAYER: #{state.process_id_struct.owner}-#{Integer.to_string(state.process_id_struct.index)} sent confirmation message to the hub")
   end
 
-  def send_broadcast_value_to_process(message, state) do
+  def send_value_to_process(message, state) do
     destination = message.plSend.destination
+    {:ok, to_abstraction_id} = Map.fetch(message, :ToAbstractionId)
+
     message_to_broadcast = %Proto.Message {
       systemId: state.system_id,
       type: :NETWORK_MESSAGE,
-      FromAbstractionId: "app.beb.pl",
-      ToAbstractionId: "app.beb.pl",
+      FromAbstractionId: to_abstraction_id,
+      ToAbstractionId: to_abstraction_id,
       networkMessage: %Proto.NetworkMessage {
         senderHost: state.process_id_struct.host,
         senderListeningPort: state.process_id_struct.port,
@@ -156,6 +177,6 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
     {_socket_connection_status, socket} = :gen_tcp.connect(process_address_as_tuple_of_integers, destination.port, options)
 
     :gen_tcp.send(socket, <<0, 0, 0, byte_size(encoded_broadcast_message)>> <> encoded_broadcast_message)
-    Logger.info("PERFECT_LINK_LAYER: #{state.process_id_struct.owner}-#{Integer.to_string(state.process_id_struct.index)} sent AppValue to another process.")
+    Logger.info("PERFECT_LINK_LAYER: #{state.process_id_struct.owner}-#{Integer.to_string(state.process_id_struct.index)} sent #{message.plSend.message.type} to another process.")
   end
 end

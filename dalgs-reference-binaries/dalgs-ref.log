@@ -1,7 +1,19 @@
-20:39:49.929 INF hub: Listening on 127.0.0.1:5000
-20:39:49.929 INF ref-3: listening on 127.0.0.1:5003
-20:39:49.929 INF ref-1: listening on 127.0.0.1:5001
-20:39:49.929 INF ref-2: listening on 127.0.0.1:5002
-20:39:49.930 INF hub: Received registration from ref-3
-20:39:49.930 INF hub: Received registration from ref-1
-20:39:49.930 INF hub: Received registration from ref-2
+22:57:11.477 INF hub: Listening on 127.0.0.1:5000
+22:57:11.478 INF ref-3: listening on 127.0.0.1:5003
+22:57:11.478 INF ref-2: listening on 127.0.0.1:5002
+22:57:11.478 INF ref-1: listening on 127.0.0.1:5001
+22:57:11.479 INF hub: Received registration from ref-3
+22:57:11.479 INF hub: Received registration from ref-1
+22:57:11.479 INF hub: Received registration from ref-2
+22:57:18.025 INF hub: Received registration from shoot-3
+22:57:18.025 INF hub: Received registration from shoot-2
+22:57:18.025 INF hub: Received registration from shoot-1
+22:57:22.207 INF ref-1: Starting system sys-1 ...
+22:57:22.208 INF                     ref-2: Starting system sys-1 ...
+22:57:22.208 INF                                         ref-3: Starting system sys-1 ...
+22:57:24.822 INF hub: sys-1/ref-2 delivered 5
+22:57:24.822 INF hub: sys-1/ref-3 delivered 5
+22:57:24.823 INF hub: sys-1/ref-1 delivered 5
+22:57:24.826 INF hub: sys-1/shoot-2 delivered 5
+22:57:24.826 INF hub: sys-1/shoot-3 delivered 5
+22:57:24.826 INF hub: sys-1/shoot-1 delivered 5

@@ -29,6 +29,16 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
   end
 
   @impl true
+  def handle_cast({:save_register_writer_data, request_id, value_to_be_written, register_to_be_written}, state) do
+    Logger.info("PROCESS_MEMORY: SAVE_REGISTER_WRITER_DATA")
+    new_state = state
+      |> Map.put(:request_id, request_id)
+      |> Map.put(:value_to_be_written, value_to_be_written)
+      |> Map.put(:register_to_be_written, register_to_be_written)
+    {:noreply, new_state}
+  end
+
+  @impl true
   def handle_call(:get_state, _from, state) do
     Logger.info("PROCESS_MEMORY: GET_STATE EVENT")
     {:reply, state, state}
