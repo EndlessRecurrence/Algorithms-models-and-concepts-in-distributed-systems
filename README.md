@@ -250,6 +250,8 @@ Properties:
 	completion.
 ```
 
+![NN Atomic Register](Images/NN-Atomic-Register.png)
+
 ### [Fault-tolerance](https://en.wikipedia.org/wiki/Fault_tolerance)
 
 - the property that enables a system to continue operating properly in the event of the failure of one or more faults within some of its components. If its operating quality decreases at all, the decrease is proportional to the severity of the failure, as compared to a naively designed system, in which even a small failure can cause total breakdown. Fault tolerance is particularly sought after in high-availability, mission-critical, or even life-critical systems. The ability of maintaining functionality when portions of a system break down is referred to as graceful degradation.
