@@ -39,6 +39,14 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
   end
 
   @impl true
+  def handle_cast({:save_readlist_entries, read_list}, state) do
+    Logger.info("PROCESS_MEMORY: SAVE_READLIST_ENTRY")
+    new_state = state
+      |> Map.put(:read_list, read_list)
+    {:noreply, new_state}
+  end
+
+  @impl true
   def handle_call(:get_state, _from, state) do
     Logger.info("PROCESS_MEMORY: GET_STATE EVENT")
     {:reply, state, state}

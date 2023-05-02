@@ -29,7 +29,6 @@ defmodule DistributedAlgorithmsApp.PerfectLinkConnectionHandler do
     Logger.info("PERFECT_LINK_CONNECTION_HANDLER: Received packet #{inspect(packet)}")
     <<_::binary-size(@message_size_in_bytes), binary_message::binary>> = packet
     message = Protobuf.decode(binary_message, Proto.Message)
-    IO.inspect message, label: "Received message", limit: :infinity
 
     PerfectLinkLayer.deliver_message(message, state)
     {:noreply, state}

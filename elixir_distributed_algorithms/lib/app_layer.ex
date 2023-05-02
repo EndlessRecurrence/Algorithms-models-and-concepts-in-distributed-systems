@@ -32,8 +32,6 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   defp receive_nnar_internal_read_message(message, state) do
     keys = [:bebDeliver, :message, :nnarInternalRead, :readId]
     read_id_received = get_in(message, Enum.map(keys, &Access.key!(&1)))
-    Logger.info("APP_LAYER: Received NNAR_INTERNAL_READ with rid=#{read_id_received}")
-    IO.inspect message, label: "APP_LAYER -> NNAR_INTERNAL_READ", limit: :infinity
 
     updated_message = %Proto.Message {
       type: :PL_SEND,
@@ -58,9 +56,46 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     PerfectLinkLayer.send_value_to_process(updated_message, state)
   end
 
-  defp receive_nnar_internal_value_message(message, _state) do
-    Logger.info("APP_LAYER: Received NNAR_INTERNAL_VALUE")
-    IO.inspect message, label: "APP_LAYER -> NNAR_INTERNAL_VALUE", limit: :infinity
+  defp receive_nnar_internal_value_message(message, state) do
+    nnar_value = message.bebDeliver.message.nnarInternalValue
+
+    if nnar_value.readId == state.request_id do
+      new_read_list = [nnar_value | state.read_list]
+      GenServer.cast(state.pl_memory_pid, {:save_readlist_entries, new_read_list})
+      if length(new_read_list) > div(length(state.process_id_structs), 2) do
+        value = Enum.max(new_read_list, fn x, y -> x.timestamp > y.timestamp or (x.timestamp == y.timestamp and x.writerRank > y.writerRank) end)
+
+        if state.reading == True do
+        else
+          Logger.info("APP_LAYER: STEP 3 -> BROADCASTING NNAR_INTERNAL_WRITE...")
+          broadcasted_message = %Proto.Message {
+            type: :BEB_BROADCAST,
+            FromAbstractionId: "app.nnar[" <> state.register_to_be_written <> "]",
+            ToAbstractionId: "app.nnar[" <> state.register_to_be_written <> "].beb",
+            bebBroadcast: %Proto.BebBroadcast {
+              message: %Proto.Message {
+                type: :NNAR_INTERNAL_WRITE,
+                FromAbstractionId: "app",
+                ToAbstractionId: "app",
+                nnarInternalWrite: %Proto.NnarInternalWrite {
+                  readId: nnar_value.readId,
+                  timestamp: value.timestamp + 1,
+                  writerRank: state.process_id_struct.rank,
+                  value: %Proto.Value {
+                    defined: true,
+                    v: state.value_to_be_written
+                  }
+                }
+              }
+            }
+          }
+
+          Enum.each(state.process_id_structs, fn x ->
+            BestEffortBroadcastLayer.send_broadcast_message(broadcasted_message, x, state)
+          end)
+        end
+      end
+    end
   end
 
   defp send_broadcast_message(message, state) do

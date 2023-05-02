@@ -1,7 +1,7 @@
 defmodule DistributedAlgorithmsApp.TimestampRankPair do
-  defstruct timestamp: 0, writer_rank: 0, value: nil
+  defstruct timestamp: 0, writer_rank: 0, value: %Proto.Value{defined: false, v: -1}
 
-  def new(timestamp, writer_rank, value) do
+  def new(timestamp \\ 0, writer_rank \\ 0, value \\ %Proto.Value{defined: false, v: -1}) do
     %DistributedAlgorithmsApp.TimestampRankPair{
       timestamp: timestamp,
       writer_rank: writer_rank,

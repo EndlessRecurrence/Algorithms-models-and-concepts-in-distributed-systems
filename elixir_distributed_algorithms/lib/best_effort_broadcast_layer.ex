@@ -3,6 +3,7 @@ defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
   alias DistributedAlgorithmsApp.AppLayer
   alias DistributedAlgorithmsApp.NnAtomicRegisterLayer
   alias DistributedAlgorithmsApp.PerfectLinkLayer
+  require Logger
 
   def receive_message(message, state) do
     deliver_message(message, state)
@@ -16,7 +17,6 @@ defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
 
     keys = [:plDeliver, :message, :ToAbstractionId]
     to_abstraction_id = get_in(message, Enum.map(keys, &Access.key!(&1)))
-    IO.puts "TO_ABSTRACTION_ID: #{to_abstraction_id}"
 
     cond do
       to_abstraction_id == "app" -> AppLayer.receive_message(update_message, state)
@@ -26,13 +26,16 @@ defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
   end
 
   def send_broadcast_message(message, process_id_struct, state) do
+    Logger.info("BEST_EFFORT_BROADCAST_LAYER: SENDING BROADCAST WITH #{message.bebBroadcast.message.type}")
     actual_message = message.bebBroadcast.message
       |> update_in([Access.key!(:FromAbstractionId)], fn _ -> "app" end)
       |> update_in([Access.key!(:ToAbstractionId)], fn _ -> "app" end)
+    keys = [:ToAbstractionId]
+    to_abstraction_id = get_in(message, Enum.map(keys, &Access.key!(&1)))
     updated_message = %Proto.Message {
       type: :PL_SEND,
-      FromAbstractionId: "app.beb.pl",
-      ToAbstractionId: "app.beb.pl",
+      FromAbstractionId: to_abstraction_id <> ".pl",
+      ToAbstractionId: to_abstraction_id <> ".pl",
       plSend: %Proto.PlSend {
         destination: process_id_struct,
         message: actual_message

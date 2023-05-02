@@ -7,7 +7,7 @@ defmodule DistributedAlgorithmsApp.NnAtomicRegisterLayer do
   def write_value(message, state) do
     new_state = %{state |
       request_id: state.request_id + 1,
-      value_to_be_written: message.plDeliver.message.appWrite.value,
+      value_to_be_written: message.plDeliver.message.appWrite.value.v,
       register_to_be_written: message.plDeliver.message.appWrite.register
     }
     GenServer.cast(state.pl_memory_pid, {:save_register_writer_data, new_state.request_id, new_state.value_to_be_written, new_state.register_to_be_written})
@@ -28,7 +28,7 @@ defmodule DistributedAlgorithmsApp.NnAtomicRegisterLayer do
       }
     }
 
-    BestEffortBroadcastLayer.read_register_values(broadcasted_message, state)
+    BestEffortBroadcastLayer.read_register_values(broadcasted_message, new_state)
   end
 
   def receive_message(message, state), do: deliver_message(message, state)

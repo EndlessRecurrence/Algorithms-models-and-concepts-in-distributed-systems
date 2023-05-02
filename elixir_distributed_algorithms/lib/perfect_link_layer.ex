@@ -100,7 +100,6 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
       plDeliver: %Proto.PlDeliver {sender: extract_sender_process_id(message, state), message: message.networkMessage.message}
     }
 
-    IO.inspect updated_message, label: "Message received from hub", limit: :infinity
     keys = [:plDeliver, :message, :ToAbstractionId]
     to_abstraction_id = Map.get(message, :ToAbstractionId)
     deep_to_abstraction_id = get_in(message, Enum.map(keys, &Access.key!(&1)))
@@ -169,6 +168,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
       }
     }
 
+    IO.inspect message_to_broadcast, label: "================ BROADCASTED MESSAGE ===============", limit: :infinity
     encoded_broadcast_message = Protobuf.encode(message_to_broadcast)
 
     process_address_bytes = Regex.split(~r/\./, destination.host)
