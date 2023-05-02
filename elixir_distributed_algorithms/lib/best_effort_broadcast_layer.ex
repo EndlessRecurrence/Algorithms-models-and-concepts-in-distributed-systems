@@ -27,11 +27,17 @@ defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
 
   def send_broadcast_message(message, process_id_struct, state) do
     Logger.info("BEST_EFFORT_BROADCAST_LAYER: SENDING BROADCAST WITH #{message.bebBroadcast.message.type}")
-    actual_message = message.bebBroadcast.message
-      |> update_in([Access.key!(:FromAbstractionId)], fn _ -> "app" end)
-      |> update_in([Access.key!(:ToAbstractionId)], fn _ -> "app" end)
     keys = [:ToAbstractionId]
     to_abstraction_id = get_in(message, Enum.map(keys, &Access.key!(&1)))
+    abstraction_id_with_cut_token =
+      Regex.split(~r/\./, to_abstraction_id)
+      |> Enum.drop(-1)
+      |> Enum.join(".")
+
+    actual_message = message.bebBroadcast.message
+      |> update_in([Access.key!(:FromAbstractionId)], fn _ -> abstraction_id_with_cut_token end)
+      |> update_in([Access.key!(:ToAbstractionId)], fn _ -> abstraction_id_with_cut_token end)
+
     updated_message = %Proto.Message {
       type: :PL_SEND,
       FromAbstractionId: to_abstraction_id <> ".pl",
