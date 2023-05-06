@@ -9,7 +9,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
   def accept(port, process_index, nickname, hub_address, hub_port) do
     {:ok, socket} = :gen_tcp.listen(port, [:binary, packet: 0, active: false, reuseaddr: true])
 
-    Logger.info("PERFECT_LINK_LAYER: Port #{port} is open.")
+    # Logger.info("PERFECT_LINK_LAYER: Port #{port} is open.")
     register_process(hub_address, hub_port, process_index, port, nickname)
     pl_memory_pid = start_layer_memory_process!(hub_address, hub_port, process_index, nickname)
 
@@ -17,7 +17,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
   end
 
   defp start_layer_memory_process!(hub_address, hub_port, process_index, nickname) do
-    Logger.info("PERFECT_LINK_LAYER_MEMORY process started...")
+    # Logger.info("PERFECT_LINK_LAYER_MEMORY process started...")
     initial_state = %{
       hub_address: hub_address,
       hub_port: hub_port,
@@ -46,7 +46,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
 
   defp loop_acceptor(socket, pl_memory_pid) do
     {:ok, client} = :gen_tcp.accept(socket)
-    Logger.info("PERFECT_LINK_LAYER: New connection accepted.")
+    # Logger.info("PERFECT_LINK_LAYER: New connection accepted.")
 
     {:ok, pid} =
       DynamicSupervisor.start_child(PerfectLinkConnectionHandler.DynamicSupervisor, %{
@@ -88,11 +88,11 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
         |> Protobuf.encode()
 
     :gen_tcp.send(socket, <<0, 0, 0, byte_size(encoded_registration_message)>> <> encoded_registration_message)
-    Logger.info("PERFECT_LINK_LAYER: #{nickname}-#{Integer.to_string(process_index)}'s registration message sent to the hub.")
+    # Logger.info("PERFECT_LINK_LAYER: #{nickname}-#{Integer.to_string(process_index)}'s registration message sent to the hub.")
   end
 
   def deliver_message(message, state) do
-    Logger.info("PERFECT_LINK_LAYER: Delivering a message...")
+    # Logger.info("PERFECT_LINK_LAYER: Delivering a message...")
 
     updated_message = %Proto.Message {
       systemId: message.systemId,
@@ -149,7 +149,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
     {_socket_connection_status, socket} = :gen_tcp.connect(hub_address_as_tuple_of_integers, destination.port, options)
 
     :gen_tcp.send(socket, <<0, 0, 0, byte_size(encoded_broadcast_message)>> <> encoded_broadcast_message)
-    Logger.info("PERFECT_LINK_LAYER: #{state.process_id_struct.owner}-#{Integer.to_string(state.process_id_struct.index)} sent confirmation message to the hub")
+    # Logger.info("PERFECT_LINK_LAYER: #{state.process_id_struct.owner}-#{Integer.to_string(state.process_id_struct.index)} sent confirmation message to the hub")
   end
 
   def send_value_to_process(message, state) do
@@ -177,6 +177,6 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
     {_socket_connection_status, socket} = :gen_tcp.connect(process_address_as_tuple_of_integers, destination.port, options)
 
     :gen_tcp.send(socket, <<0, 0, 0, byte_size(encoded_broadcast_message)>> <> encoded_broadcast_message)
-    Logger.info("PERFECT_LINK_LAYER: #{state.process_id_struct.owner}-#{Integer.to_string(state.process_id_struct.index)} sent #{message.plSend.message.type} to another process.")
+    # Logger.info("PERFECT_LINK_LAYER: #{state.process_id_struct.owner}-#{Integer.to_string(state.process_id_struct.index)} sent #{message.plSend.message.type} to another process.")
   end
 end

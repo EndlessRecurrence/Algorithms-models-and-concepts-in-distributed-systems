@@ -29,21 +29,62 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
   end
 
   @impl true
-  def handle_cast({:save_register_writer_data, request_id, value_to_be_written, register_to_be_written}, state) do
-    Logger.info("PROCESS_MEMORY: SAVE_REGISTER_WRITER_DATA")
-    new_state = state
-      |> Map.put(:request_id, request_id)
-      |> Map.put(:value_to_be_written, value_to_be_written)
-      |> Map.put(:register_to_be_written, register_to_be_written)
-    {:noreply, new_state}
-  end
-
-  @impl true
   def handle_cast({:save_readlist_entries, read_list}, state) do
     Logger.info("PROCESS_MEMORY: SAVE_READLIST_ENTRY")
     new_state = state
       |> Map.put(:read_list, read_list)
     {:noreply, new_state}
+  end
+
+  @impl true
+  def handle_cast({:save_new_timestamp_rank_pair, pair}, state) do
+    Logger.info("PROCESS_MEMORY: SAVE_READLIST_ENTRY")
+    new_state = state
+      |> Map.put(:timestamp_rank_pair, pair)
+    {:noreply, new_state}
+  end
+
+  @impl true
+  def handle_cast(:reset_ack_counter, state) do
+    Logger.info("PROCESS_MEMORY: RESET_ACK_COUNTER")
+    new_state = state
+      |> Map.put(:acknowledgments, 0)
+    {:noreply, new_state}
+  end
+
+  @impl true
+  def handle_cast({:save_register_value, register, value}, state) do
+    Logger.info("PROCESS_MEMORY: SAVE_REGISTER_VALUE")
+    updated_registers = Map.put(state.registers, register, value)
+    new_state = state
+      |> Map.put(:registers, updated_registers)
+    {:noreply, new_state}
+  end
+
+  @impl true
+  def handle_call({:save_register_writer_data, request_id, value_to_be_written, register_to_be_written}, _from, state) do
+    Logger.info("PROCESS_MEMORY: SAVE_REGISTER_WRITER_DATA")
+    new_state = state
+      |> Map.put(:request_id, request_id)
+      |> Map.put(:value_to_be_written, value_to_be_written)
+      |> Map.put(:register_to_be_written, register_to_be_written)
+    {:reply, {request_id, value_to_be_written, register_to_be_written}, new_state}
+  end
+
+  @impl true
+  def handle_call(:increment_ack_counter, _from, state) do
+    Logger.info("PROCESS_MEMORY: INCREMENT_ACK_COUNTER")
+    new_state = state
+      |> Map.put(:acknowledgments, state.acknowledgments + 1)
+    {:reply, state.acknowledgments + 1, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_reading_flag, value}, _from, state) do
+    Logger.info("PROCESS_MEMORY: UPDATE_READING_FLAG")
+    new_state = state
+      |> Map.put(:reading, value)
+    {:reply, new_state.reading, new_state}
   end
 
   @impl true
