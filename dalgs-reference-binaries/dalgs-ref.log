@@ -1,20 +1,20 @@
-21:38:35.588 INF hub: Listening on 127.0.0.1:5000
-21:38:35.588 INF ref-3: listening on 127.0.0.1:5003
-21:38:35.589 INF ref-1: listening on 127.0.0.1:5001
-21:38:35.589 INF ref-2: listening on 127.0.0.1:5002
-21:38:35.595 INF hub: Received registration from ref-3
-21:38:35.595 INF hub: Received registration from ref-2
-21:38:35.595 INF hub: Received registration from ref-1
-21:38:43.659 INF hub: Received registration from shoot-1
-21:38:43.659 INF hub: Received registration from shoot-2
-21:38:43.659 INF hub: Received registration from shoot-3
-21:38:48.233 INF ref-1: Starting system sys-1 ...
-21:38:48.234 INF                     ref-2: Starting system sys-1 ...
-21:38:48.234 INF                                         ref-3: Starting system sys-1 ...
-21:38:54.850 INF hub: sys-1/ref-2 delivered 5
-21:38:54.851 INF hub: sys-1/ref-3 delivered 5
-21:38:54.851 INF hub: sys-1/ref-1 delivered 5
-21:38:54.855 INF hub: sys-1/shoot-2 delivered 5
-21:38:54.855 INF hub: sys-1/shoot-1 delivered 5
-21:38:54.855 INF hub: sys-1/shoot-3 delivered 5
-21:39:04.764 INF hub: sys-1/shoot-1 finished writing x
+22:06:21.040 INF hub: Listening on 127.0.0.1:5000
+22:06:21.040 INF ref-3: listening on 127.0.0.1:5003
+22:06:21.040 INF ref-1: listening on 127.0.0.1:5001
+22:06:21.040 INF ref-2: listening on 127.0.0.1:5002
+22:06:21.045 INF hub: Received registration from ref-1
+22:06:21.046 INF hub: Received registration from ref-2
+22:06:21.046 INF hub: Received registration from ref-3
+22:06:31.244 INF hub: Received registration from shoot-2
+22:06:31.244 INF hub: Received registration from shoot-1
+22:06:31.244 INF hub: Received registration from shoot-3
+22:06:35.042 INF ref-1: Starting system sys-1 ...
+22:06:35.043 INF                     ref-2: Starting system sys-1 ...
+22:06:35.044 INF                                         ref-3: Starting system sys-1 ...
+22:06:40.583 INF hub: sys-1/shoot-1 finished writing x
+22:06:40.590 INF hub: sys-1/shoot-1 finished writing x
+22:06:40.593 INF hub: sys-1/shoot-1 finished writing x
+22:06:40.601 INF hub: sys-1/shoot-1 finished writing x
+22:06:40.607 INF hub: sys-1/shoot-1 finished writing x
+22:06:45.317 INF hub: sys-1/ref-2 read x=89
+22:06:45.319 INF hub: sys-1/ref-1 read x=89

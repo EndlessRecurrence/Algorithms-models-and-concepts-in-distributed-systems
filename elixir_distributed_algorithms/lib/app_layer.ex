@@ -87,7 +87,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
           type: :NNAR_INTERNAL_ACK,
           FromAbstractionId: abstraction_id,
           ToAbstractionId: cut_abstraction_name.(abstraction_id),
-          nnarInternalValue: %Proto.NnarInternalAck {
+          nnarInternalAck: %Proto.NnarInternalAck {
             readId: message.bebDeliver.message.nnarInternalWrite.readId
           }
         }
