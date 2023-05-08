@@ -65,6 +65,7 @@ defmodule DistributedAlgorithmsApp.NnAtomicRegisterLayer do
   end
 
   def send_app_write_return_message(message, state) do
+    Logger.info("NN ATOMIC REGISTER #{state.owner}-#{state.process_index}: SENT APP_WRITE_RETURN TO HUB")
     response = %Proto.Message {
       type: :PL_SEND,
       plSend: %Proto.PlSend {

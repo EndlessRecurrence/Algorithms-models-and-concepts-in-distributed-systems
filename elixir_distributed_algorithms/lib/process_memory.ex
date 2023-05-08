@@ -12,53 +12,53 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
   end
 
   @impl true
-  def handle_cast({:save_process_id_structs, process_id_structs, process_id_struct}, state) do
+  def handle_call({:save_process_id_structs, process_id_structs, process_id_struct}, _from, state) do
     Logger.info("PROCESS_MEMORY: SAVE_PROCESS_ID_STRUCTS")
     new_state = state
       |> Map.put(:process_id_struct, process_id_struct)
       |> Map.put(:process_id_structs, process_id_structs)
-    {:noreply, new_state}
+    {:reply, {process_id_structs, process_id_struct}, new_state}
   end
 
   @impl true
-  def handle_cast({:save_system_id, system_id}, state) do
+  def handle_call({:save_system_id, system_id}, _from, state) do
     Logger.info("PROCESS_MEMORY: SAVE_SYSTEM_ID")
     new_state = state
       |> Map.put(:system_id, system_id)
-    {:noreply, new_state}
+    {:reply, system_id, new_state}
   end
 
   @impl true
-  def handle_cast({:save_readlist_entries, read_list}, state) do
+  def handle_call({:save_readlist_entries, read_list}, _from, state) do
     Logger.info("PROCESS_MEMORY: SAVE_READLIST_ENTRY")
     new_state = state
       |> Map.put(:read_list, read_list)
-    {:noreply, new_state}
+    {:reply, read_list, new_state}
   end
 
   @impl true
-  def handle_cast({:save_new_timestamp_rank_pair, pair}, state) do
-    Logger.info("PROCESS_MEMORY: SAVE_READLIST_ENTRY")
+  def handle_call({:save_new_timestamp_rank_pair, pair}, _from, state) do
+    Logger.info("PROCESS_MEMORY: SAVE_NEW_TIMESTAMP_RANK_PAIR")
     new_state = state
       |> Map.put(:timestamp_rank_pair, pair)
-    {:noreply, new_state}
+    {:reply, pair, new_state}
   end
 
   @impl true
-  def handle_cast(:reset_ack_counter, state) do
+  def handle_call(:reset_ack_counter, _from, state) do
     Logger.info("PROCESS_MEMORY: RESET_ACK_COUNTER")
     new_state = state
       |> Map.put(:acknowledgments, 0)
-    {:noreply, new_state}
+    {:reply, 0, new_state}
   end
 
   @impl true
-  def handle_cast({:save_register_value, register, value}, state) do
+  def handle_call({:save_register_value, register, value}, _from, state) do
     Logger.info("PROCESS_MEMORY: SAVE_REGISTER_VALUE")
     updated_registers = Map.put(state.registers, register, value)
     new_state = state
       |> Map.put(:registers, updated_registers)
-    {:noreply, new_state}
+    {:reply, {register, value}, new_state}
   end
 
   @impl true

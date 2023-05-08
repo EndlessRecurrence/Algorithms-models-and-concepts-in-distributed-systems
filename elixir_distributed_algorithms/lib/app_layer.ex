@@ -63,7 +63,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   end
 
   defp receive_nnar_internal_write_message(message, state) do
-    Logger.info("NNAR_INTERNAL_WRITE MESSAGE RECEIVED")
+    Logger.info("NNAR_INTERNAL_WRITE #{state.owner}-#{state.process_index} MESSAGE RECEIVED")
     received_struct = TimestampRankPair.new(
       message.bebDeliver.message.nnarInternalWrite.timestamp,
       message.bebDeliver.message.nnarInternalWrite.writerRank,
@@ -71,7 +71,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     )
 
     if TimestampRankPair.compare(received_struct, state.timestamp_rank_struct) do
-      GenServer.cast(state.pl_memory_pid, {:save_new_timestamp_rank_pair, received_struct})
+      GenServer.call(state.pl_memory_pid, {:save_new_timestamp_rank_pair, received_struct})
     end
 
     # abstraction_id = "app.nnar[" <> state.register_to_be_written <> "].pl"
@@ -80,12 +80,12 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     acknowledgment_message = %Proto.Message {
       type: :PL_SEND,
       FromAbstractionId: abstraction_id,
-      ToAbstractionId: cut_abstraction_name.(abstraction_id),
+      ToAbstractionId: abstraction_id,
       plSend: %Proto.PlSend {
         destination: message.bebDeliver.sender,
         message: %Proto.Message {
           type: :NNAR_INTERNAL_ACK,
-          FromAbstractionId: cut_abstraction_name.(abstraction_id),
+          FromAbstractionId: abstraction_id,
           ToAbstractionId: cut_abstraction_name.(abstraction_id),
           nnarInternalValue: %Proto.NnarInternalAck {
             readId: message.bebDeliver.message.nnarInternalWrite.readId
@@ -102,11 +102,11 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     acknowledgments = GenServer.call(state.pl_memory_pid, :increment_ack_counter)
     n = length(state.process_id_structs)
     if acknowledgments > div(n, 2) do
-      GenServer.cast(state.pl_memory_pid, :reset_ack_counter)
+      GenServer.call(state.pl_memory_pid, :reset_ack_counter)
       if state.reading == true do
-        GenServer.cast(state.pl_memory_pid, {:update_reading_flag, false})
+        GenServer.call(state.pl_memory_pid, {:update_reading_flag, false})
       else
-        GenServer.cast(state.pl_memory_pid, {:save_register_value, state.register_to_be_written, state.value_to_be_written})
+        GenServer.call(state.pl_memory_pid, {:save_register_value, state.register_to_be_written, state.value_to_be_written})
         response = %Proto.Message {
           type: :APP_WRITE_RETURN,
           appWriteReturn: %Proto.AppWriteReturn {
@@ -124,7 +124,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
 
     if nnar_value.readId == state.request_id do
       new_read_list = [nnar_value | state.read_list]
-      GenServer.cast(state.pl_memory_pid, {:save_readlist_entries, new_read_list})
+      GenServer.call(state.pl_memory_pid, {:save_readlist_entries, new_read_list})
       if length(new_read_list) > div(length(state.process_id_structs), 2) do
         value = Enum.max(new_read_list, fn x, y -> x.timestamp > y.timestamp or (x.timestamp == y.timestamp and x.writerRank > y.writerRank) end)
 
@@ -210,8 +210,8 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     process_id_struct = broadcasted_process_id_structs_from_hub |> Enum.filter(fn x -> condition_lambda.(x) end) |> Enum.at(0)
     other_process_id_structs = broadcasted_process_id_structs_from_hub |> Enum.reject(fn x -> condition_lambda.(x) end)
 
-    GenServer.cast(state.pl_memory_pid, {:save_process_id_structs, other_process_id_structs, process_id_struct})
-    GenServer.cast(state.pl_memory_pid, {:save_system_id, message.systemId})
+    GenServer.call(state.pl_memory_pid, {:save_process_id_structs, other_process_id_structs, process_id_struct})
+    GenServer.call(state.pl_memory_pid, {:save_system_id, message.systemId})
   end
 
 end
