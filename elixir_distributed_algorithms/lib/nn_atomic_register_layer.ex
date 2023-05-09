@@ -10,22 +10,62 @@ defmodule DistributedAlgorithmsApp.NnAtomicRegisterLayer do
     new_state = %{state |
       request_id: state.request_id + 1,
       value: message.plDeliver.message.appWrite.value.v,
-      register: message.plDeliver.message.appWrite.register
+      register: message.plDeliver.message.appWrite.register,
+      acknowledgments: 0,
+      reading: false,
+      read_list: []
     }
 
-    {request_id, _value_to_be_written, register_to_be_written} = GenServer.call(state.pl_memory_pid, {:save_register_writer_data, new_state.request_id, new_state.value, new_state.register})
+    GenServer.call(state.pl_memory_pid, {:save_register_writer_data, new_state.request_id, new_state.value, new_state.register})
+    GenServer.call(state.pl_memory_pid, {:save_readlist_entries, []})
+    GenServer.call(state.pl_memory_pid, {:update_reading_flag, false})
+    GenServer.call(state.pl_memory_pid, :reset_ack_counter)
 
     broadcasted_message = %Proto.Message {
       type: :BEB_BROADCAST,
-      FromAbstractionId: "app.nnar[" <> register_to_be_written <> "]",
-      ToAbstractionId: "app.nnar[" <> register_to_be_written <> "].beb",
+      FromAbstractionId: "app.nnar[" <> new_state.register <> "]",
+      ToAbstractionId: "app.nnar[" <> new_state.register <> "].beb",
       bebBroadcast: %Proto.BebBroadcast {
         message: %Proto.Message {
           type: :NNAR_INTERNAL_READ,
-          FromAbstractionId: "app.nnar[" <> register_to_be_written <> "]",
-          ToAbstractionId: "app.nnar[" <> register_to_be_written <> "]",
+          FromAbstractionId: "app.nnar[" <> new_state.register <> "]",
+          ToAbstractionId: "app.nnar[" <> new_state.register <> "]",
           nnarInternalRead: %Proto.NnarInternalRead {
-            readId: request_id
+            readId: new_state.request_id
+          }
+        }
+      }
+    }
+
+    BestEffortBroadcastLayer.read_register_values(broadcasted_message, new_state)
+  end
+
+  def read_value(message, state) do
+    Logger.info("NNAR_ATOMIC_REGISTER: READ VALUE AND READ FROM OTHER PROCESSES")
+    new_state = %{state |
+      request_id: state.request_id + 1,
+      acknowledgments: 0,
+      read_list: [],
+      reading: true,
+      register: message.plDeliver.message.appRead.register,
+    }
+
+    GenServer.call(state.pl_memory_pid, {:save_register_reader_data, new_state.request_id, new_state.register})
+    GenServer.call(state.pl_memory_pid, {:save_readlist_entries, []})
+    GenServer.call(state.pl_memory_pid, {:update_reading_flag, true})
+    GenServer.call(state.pl_memory_pid, :reset_ack_counter)
+
+    broadcasted_message = %Proto.Message {
+      type: :BEB_BROADCAST,
+      FromAbstractionId: "app.nnar[" <> new_state.register <> "]",
+      ToAbstractionId: "app.nnar[" <> new_state.register <> "].beb",
+      bebBroadcast: %Proto.BebBroadcast {
+        message: %Proto.Message {
+          type: :NNAR_INTERNAL_READ,
+          FromAbstractionId: "app.nnar[" <> new_state.register <> "]",
+          ToAbstractionId: "app.nnar[" <> new_state.register <> "]",
+          nnarInternalRead: %Proto.NnarInternalRead {
+            readId: new_state.request_id
           }
         }
       }
@@ -63,8 +103,8 @@ defmodule DistributedAlgorithmsApp.NnAtomicRegisterLayer do
     end)
   end
 
-  def send_app_write_return_message(message, state) do
-    Logger.info("NN ATOMIC REGISTER #{state.owner}-#{state.process_index}: SENT APP_WRITE_RETURN TO HUB")
+  def send_app_return_message(message, state) do
+    Logger.info("NN ATOMIC REGISTER #{state.owner}-#{state.process_index}: SENT #{message.type} TO HUB")
     response = %Proto.Message {
       type: :PL_SEND,
       plSend: %Proto.PlSend {

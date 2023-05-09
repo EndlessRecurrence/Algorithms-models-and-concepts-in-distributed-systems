@@ -40,7 +40,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
   def handle_call({:save_new_timestamp_rank_pair, pair}, _from, state) do
     Logger.info("PROCESS_MEMORY: SAVE_NEW_TIMESTAMP_RANK_PAIR")
     new_state = state
-      |> Map.put(:timestamp_rank_pair, pair)
+      |> Map.put(:timestamp_rank_struct, pair)
     {:reply, pair, new_state}
   end
 
@@ -69,6 +69,15 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       |> Map.put(:value, value)
       |> Map.put(:register, register)
     {:reply, {request_id, value, register}, new_state}
+  end
+
+  @impl true
+  def handle_call({:save_register_reader_data, request_id, register}, _from, state) do
+    Logger.info("PROCESS_MEMORY: SAVE_REGISTER_READER_DATA")
+    new_state = state
+      |> Map.put(:request_id, request_id)
+      |> Map.put(:register, register)
+    {:reply, {request_id, register}, new_state}
   end
 
   @impl true

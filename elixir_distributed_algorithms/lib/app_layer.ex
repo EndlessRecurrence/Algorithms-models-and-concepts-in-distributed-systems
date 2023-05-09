@@ -19,6 +19,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       :PROC_INITIALIZE_SYSTEM -> initialize_system(message, state)
       :APP_BROADCAST -> send_broadcast_message(message, state)
       :APP_WRITE -> send_nnar_broadcast_read(message, state)
+      :APP_READ -> send_nnar_broadcast_read(message, state)
     end
   end
 
@@ -67,7 +68,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     received_struct = TimestampRankPair.new(
       message.bebDeliver.message.nnarInternalWrite.timestamp,
       message.bebDeliver.message.nnarInternalWrite.writerRank,
-      message.bebDeliver.message.nnarInternalWrite.value.v
+      message.bebDeliver.message.nnarInternalWrite.value
     )
 
     if TimestampRankPair.compare(received_struct, state.timestamp_rank_struct) do
@@ -105,6 +106,14 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       GenServer.call(state.pl_memory_pid, :reset_ack_counter)
       if state.reading == true do
         GenServer.call(state.pl_memory_pid, {:update_reading_flag, false})
+        response = %Proto.Message {
+          type: :APP_READ_RETURN,
+          appReadReturn: %Proto.AppReadReturn {
+            register: state.register,
+            value: state.timestamp_rank_struct.value
+          }
+        }
+        NnAtomicRegisterLayer.send_app_return_message(response, state)
       else
         GenServer.call(state.pl_memory_pid, {:save_register_value, state.register, state.value})
         response = %Proto.Message {
@@ -113,7 +122,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
             register: state.register
           }
         }
-        NnAtomicRegisterLayer.send_app_write_return_message(response, state)
+        NnAtomicRegisterLayer.send_app_return_message(response, state)
       end
     end
   end
@@ -127,10 +136,38 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       GenServer.call(state.pl_memory_pid, {:save_readlist_entries, new_read_list})
       if length(new_read_list) > div(length(state.process_id_structs), 2) do
         value = Enum.max(new_read_list, fn x, y -> x.timestamp > y.timestamp or (x.timestamp == y.timestamp and x.writerRank > y.writerRank) end)
+        new_timestamp_rank_pair = %TimestampRankPair{timestamp: value.timestamp, writer_rank: value.writerRank, value: value.value.v}
+        GenServer.call(state.pl_memory_pid, {:save_new_timestamp_rank_pair, new_timestamp_rank_pair})
+        GenServer.call(state.pl_memory_pid, {:save_readlist_entries, []})
 
+        Logger.info("APP_LAYER READING=#{state.reading}: STEP 3 -> BROADCASTING NNAR_INTERNAL_WRITE...")
         if state.reading == True do
+          broadcasted_message = %Proto.Message {
+            type: :BEB_BROADCAST,
+            FromAbstractionId: "app.nnar[" <> state.register <> "]",
+            ToAbstractionId: "app.nnar[" <> state.register <> "].beb",
+            bebBroadcast: %Proto.BebBroadcast {
+              message: %Proto.Message {
+                type: :NNAR_INTERNAL_WRITE,
+                FromAbstractionId: "app",
+                ToAbstractionId: "app",
+                nnarInternalWrite: %Proto.NnarInternalWrite {
+                  readId: value.readId,
+                  timestamp: value.timestamp,
+                  writerRank: value.writerRank,
+                  value: %Proto.Value {
+                    defined: true,
+                    v: value.value.v
+                  }
+                }
+              }
+            }
+          }
+
+          Enum.each(state.process_id_structs, fn x ->
+            BestEffortBroadcastLayer.send_broadcast_message(broadcasted_message, x, state)
+          end)
         else
-          Logger.info("APP_LAYER: STEP 3 -> BROADCASTING NNAR_INTERNAL_WRITE...")
           broadcasted_message = %Proto.Message {
             type: :BEB_BROADCAST,
             FromAbstractionId: "app.nnar[" <> state.register <> "]",
@@ -186,7 +223,10 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   end
 
   defp send_nnar_broadcast_read(message, state) do
-    NnAtomicRegisterLayer.write_value(message, state)
+    case message.plDeliver.message.type do
+      :APP_READ -> NnAtomicRegisterLayer.read_value(message, state)
+      :APP_WRITE -> NnAtomicRegisterLayer.write_value(message, state)
+    end
   end
 
   def receive_app_value_message(message, state) do
