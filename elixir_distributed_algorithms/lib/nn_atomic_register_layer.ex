@@ -9,22 +9,21 @@ defmodule DistributedAlgorithmsApp.NnAtomicRegisterLayer do
     Logger.info("NNAR_ATOMIC_REGISTER: WRITE VALUE AND READ FROM OTHER PROCESSES")
     new_state = %{state |
       request_id: state.request_id + 1,
-      value_to_be_written: message.plDeliver.message.appWrite.value.v,
-      register_to_be_written: message.plDeliver.message.appWrite.register
+      value: message.plDeliver.message.appWrite.value.v,
+      register: message.plDeliver.message.appWrite.register
     }
 
-    {request_id, _value_to_be_written, register_to_be_written} = GenServer.call(state.pl_memory_pid, {:save_register_writer_data, new_state.request_id, new_state.value_to_be_written, new_state.register_to_be_written})
-
+    {request_id, _value_to_be_written, register_to_be_written} = GenServer.call(state.pl_memory_pid, {:save_register_writer_data, new_state.request_id, new_state.value, new_state.register})
 
     broadcasted_message = %Proto.Message {
       type: :BEB_BROADCAST,
-      FromAbstractionId: "app.nnar["<> register_to_be_written <>"]",
-      ToAbstractionId: "app.nnar["<> register_to_be_written <> "]" <> ".beb",
+      FromAbstractionId: "app.nnar[" <> register_to_be_written <> "]",
+      ToAbstractionId: "app.nnar[" <> register_to_be_written <> "].beb",
       bebBroadcast: %Proto.BebBroadcast {
         message: %Proto.Message {
           type: :NNAR_INTERNAL_READ,
-          FromAbstractionId: "app.nnar["<> register_to_be_written <> "]",
-          ToAbstractionId: "app.nnar["<> register_to_be_written <> "]",
+          FromAbstractionId: "app.nnar[" <> register_to_be_written <> "]",
+          ToAbstractionId: "app.nnar[" <> register_to_be_written <> "]",
           nnarInternalRead: %Proto.NnarInternalRead {
             readId: request_id
           }

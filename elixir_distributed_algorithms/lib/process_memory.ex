@@ -62,13 +62,13 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
   end
 
   @impl true
-  def handle_call({:save_register_writer_data, request_id, value_to_be_written, register_to_be_written}, _from, state) do
+  def handle_call({:save_register_writer_data, request_id, value, register}, _from, state) do
     Logger.info("PROCESS_MEMORY: SAVE_REGISTER_WRITER_DATA")
     new_state = state
       |> Map.put(:request_id, request_id)
-      |> Map.put(:value_to_be_written, value_to_be_written)
-      |> Map.put(:register_to_be_written, register_to_be_written)
-    {:reply, {request_id, value_to_be_written, register_to_be_written}, new_state}
+      |> Map.put(:value, value)
+      |> Map.put(:register, register)
+    {:reply, {request_id, value, register}, new_state}
   end
 
   @impl true

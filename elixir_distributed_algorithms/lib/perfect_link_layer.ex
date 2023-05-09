@@ -27,12 +27,11 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
       process_id_struct: nil,
       timestamp_rank_struct: struct(TimestampRankPair),
       acknowledgments: 0,
-      value_to_be_written: nil,
+      value: nil,
       request_id: 0,
       read_list: [],
-      value_to_be_read: nil,
       reading: false,
-      register_to_be_written: nil,
+      register: nil,
       registers: %{}
     }
 

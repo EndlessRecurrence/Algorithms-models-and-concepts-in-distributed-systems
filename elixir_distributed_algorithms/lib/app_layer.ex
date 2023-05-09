@@ -98,7 +98,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   end
 
   defp receive_nnar_internal_ack_message(message, state) when message.bebDeliver.message.nnarInternalAck.readId == state.request_id do
-    Logger.info("=============== #{state.process_id_struct.owner}-#{state.process_id_struct.index} =================NNAR_INTERNAL_ACK MESSAGE RECEIVED: #{state.register_to_be_written} #{state.value_to_be_written}=======================================")
+    Logger.info("=============== #{state.process_id_struct.owner}-#{state.process_id_struct.index} =================NNAR_INTERNAL_ACK MESSAGE RECEIVED: #{state.register} #{state.value}=======================================")
     acknowledgments = GenServer.call(state.pl_memory_pid, :increment_ack_counter)
     n = length(state.process_id_structs)
     if acknowledgments > div(n, 2) do
@@ -106,11 +106,11 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       if state.reading == true do
         GenServer.call(state.pl_memory_pid, {:update_reading_flag, false})
       else
-        GenServer.call(state.pl_memory_pid, {:save_register_value, state.register_to_be_written, state.value_to_be_written})
+        GenServer.call(state.pl_memory_pid, {:save_register_value, state.register, state.value})
         response = %Proto.Message {
           type: :APP_WRITE_RETURN,
           appWriteReturn: %Proto.AppWriteReturn {
-            register: state.register_to_be_written
+            register: state.register
           }
         }
         NnAtomicRegisterLayer.send_app_write_return_message(response, state)
@@ -133,8 +133,8 @@ defmodule DistributedAlgorithmsApp.AppLayer do
           Logger.info("APP_LAYER: STEP 3 -> BROADCASTING NNAR_INTERNAL_WRITE...")
           broadcasted_message = %Proto.Message {
             type: :BEB_BROADCAST,
-            FromAbstractionId: "app.nnar[" <> state.register_to_be_written <> "]",
-            ToAbstractionId: "app.nnar[" <> state.register_to_be_written <> "].beb",
+            FromAbstractionId: "app.nnar[" <> state.register <> "]",
+            ToAbstractionId: "app.nnar[" <> state.register <> "].beb",
             bebBroadcast: %Proto.BebBroadcast {
               message: %Proto.Message {
                 type: :NNAR_INTERNAL_WRITE,
@@ -146,7 +146,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
                   writerRank: state.process_id_struct.rank,
                   value: %Proto.Value {
                     defined: true,
-                    v: state.value_to_be_written
+                    v: state.value
                   }
                 }
               }
