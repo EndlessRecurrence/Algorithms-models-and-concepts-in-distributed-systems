@@ -113,7 +113,8 @@ defmodule DistributedAlgorithmsApp.AppLayer do
             value: state.timestamp_rank_struct.value
           }
         }
-        NnAtomicRegisterLayer.send_app_return_message(response, state)
+        new_state = GenServer.call(state.pl_memory_pid, :get_state)
+        NnAtomicRegisterLayer.send_app_return_message(response, new_state)
       else
         GenServer.call(state.pl_memory_pid, {:save_register_value, state.register, state.value})
         response = %Proto.Message {
@@ -122,7 +123,8 @@ defmodule DistributedAlgorithmsApp.AppLayer do
             register: state.register
           }
         }
-        NnAtomicRegisterLayer.send_app_return_message(response, state)
+        new_state = GenServer.call(state.pl_memory_pid, :get_state)
+        NnAtomicRegisterLayer.send_app_return_message(response, new_state)
       end
     end
   end
@@ -136,7 +138,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       GenServer.call(state.pl_memory_pid, {:save_readlist_entries, new_read_list})
       if length(new_read_list) > div(length(state.process_id_structs), 2) do
         value = Enum.max(new_read_list, fn x, y -> x.timestamp > y.timestamp or (x.timestamp == y.timestamp and x.writerRank > y.writerRank) end)
-        new_timestamp_rank_pair = %TimestampRankPair{timestamp: value.timestamp, writer_rank: value.writerRank, value: value.value.v}
+        new_timestamp_rank_pair = %TimestampRankPair{timestamp: value.timestamp, writer_rank: value.writerRank, value: value.value}
         GenServer.call(state.pl_memory_pid, {:save_new_timestamp_rank_pair, new_timestamp_rank_pair})
         GenServer.call(state.pl_memory_pid, {:save_readlist_entries, []})
 
@@ -157,7 +159,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
                   writerRank: value.writerRank,
                   value: %Proto.Value {
                     defined: true,
-                    v: value.value.v
+                    v: value.value
                   }
                 }
               }
