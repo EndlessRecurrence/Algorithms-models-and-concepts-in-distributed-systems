@@ -252,6 +252,24 @@ Properties:
 
 ![NN Atomic Register](Images/NN-Atomic-Register.png)
 
+Write operation flow:
+
+1. Hub sends a WRITE [register_name] [value] to a "leader" process [owner-rank]
+2. [owner-rank] broadcasts a READ [operation_id] to all the other processes to get the timestamps from them.
+3. The processes deliver the READ and send the most recent value associated with [register_name] back to the "leader process"
+4. The "leader process" delivers the value and broadcasts a WRITE [operation_id] [maxts+1] [rank(self)] [writeval] to the other processes with a timestamp higher than the maximum available timestamp.
+5. The processes deliver the written value, saving it and then sending back an acknowledgment to the "leader process"
+6. The leader delivers the acknowledgments and sends a WRITERETURN to the hub.
+
+Read operation flow:
+
+1. Hub sends a READ [register_name] to a leader process [owner-rank]
+2. [owner-rank] broadcasts a READ [operation_id] to all the other processes.
+3. The processes deliver the READ and send the most recent value associated with [register_name] back to the "leader process"
+4. The "leader process" delivers the value and broadcasts a WRITE [operation_id] [maxts] [reader_rank?] [readval] to the other processes.
+5. The processes deliver the written value, saving it and then sending back an acknowledgment to the "leader process"
+6. The leader delivers the acknowledgments and sends a READRETURN with the read value to the hub.
+
 ### [Fault-tolerance](https://en.wikipedia.org/wiki/Fault_tolerance)
 
 - the property that enables a system to continue operating properly in the event of the failure of one or more faults within some of its components. If its operating quality decreases at all, the decrease is proportional to the severity of the failure, as compared to a naively designed system, in which even a small failure can cause total breakdown. Fault tolerance is particularly sought after in high-availability, mission-critical, or even life-critical systems. The ability of maintaining functionality when portions of a system break down is referred to as graceful degradation.
