@@ -255,9 +255,9 @@ Properties:
 Write operation flow:
 
 1. Hub sends a WRITE [register_name] [value] to a "leader" process [owner-rank]
-2. [owner-rank] broadcasts a READ [operation_id] to all the other processes to get the timestamps from them.
-3. The processes deliver the READ and send the most recent value associated with [register_name] back to the "leader process"
-4. The "leader process" delivers the value and broadcasts a WRITE [operation_id] [maxts+1] [rank(self)] [writeval] to the other processes with a timestamp higher than the maximum available timestamp.
+2. [owner-rank] creates the register with the given name if it does not exist and then broadcasts a READ [operation_id] to all the other processes to get the timestamps from them, setting the abstraction ID destination to be app.nnar[register_name].
+3. The processes deliver the READ and send the most recent value associated with [register_name] (which will be created if it does not exist yet) specified in the abstraction ID back to the "leader process"
+4. The "leader process" delivers the value, saves it in the register's readlist and broadcasts a WRITE [operation_id] [maxts+1] [rank(self)] [writeval] to the other processes with a timestamp higher than the maximum available timestamp.
 5. The processes deliver the written value, saving it and then sending back an acknowledgment to the "leader process"
 6. The leader delivers the acknowledgments and sends a WRITERETURN to the hub.
 

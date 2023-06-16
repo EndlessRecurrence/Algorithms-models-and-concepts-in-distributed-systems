@@ -26,7 +26,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkConnectionHandler do
 
   @impl true
   def handle_info({:tcp, _socket, packet}, state) do
-    Logger.info("PERFECT_LINK_CONNECTION_HANDLER: Received packet #{inspect(packet)}")
+    #Logger.info("PERFECT_LINK_CONNECTION_HANDLER: Received packet #{inspect(packet)}")
     <<_::binary-size(@message_size_in_bytes), binary_message::binary>> = packet
     message = Protobuf.decode(binary_message, Proto.Message)
 
@@ -36,13 +36,13 @@ defmodule DistributedAlgorithmsApp.PerfectLinkConnectionHandler do
 
   @impl true
   def handle_info({:tcp_closed, _socket}, state) do
-    Logger.info("PERFECT_LINK_CONNECTION_HANDLER: Socket is closed")
+    #Logger.info("PERFECT_LINK_CONNECTION_HANDLER: Socket is closed")
     {:stop, {:shutdown, "Socket is closed"}, state}
   end
 
   @impl true
   def handle_info({:tcp_error, _socket, reason}, state) do
-    Logger.error("PERFECT_LINK_CONNECTION_HANDLER: Tcp error - #{inspect(reason)}")
+    #Logger.error("PERFECT_LINK_CONNECTION_HANDLER: Tcp error - #{inspect(reason)}")
     {:stop, {:shutdown, "Tcp error: #{inspect(reason)}"}, state}
   end
 end

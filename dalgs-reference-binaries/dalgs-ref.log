@@ -1,36 +1,20 @@
-10:45:13.067 INF hub: Listening on 127.0.0.1:5000
-10:45:13.067 INF ref-3: listening on 127.0.0.1:5003
-10:45:13.068 INF ref-2: listening on 127.0.0.1:5002
-10:45:13.068 INF ref-1: listening on 127.0.0.1:5001
-10:45:13.069 INF hub: Received registration from ref-3
-10:45:13.069 INF hub: Received registration from ref-1
-10:45:13.069 INF hub: Received registration from ref-2
-10:45:17.687 INF hub: Received registration from shoot-1
-10:45:17.687 INF hub: Received registration from shoot-3
-10:45:17.687 INF hub: Received registration from shoot-2
-10:45:20.654 INF ref-1: Starting system sys-1 ...
-10:45:20.655 INF                     ref-2: Starting system sys-1 ...
-10:45:20.656 INF                                         ref-3: Starting system sys-1 ...
-10:45:24.486 INF hub: sys-1/shoot-3 finished writing x
-10:45:32.003 INF hub: sys-1/ref-1 read x=89
-10:45:32.006 INF hub: sys-1/ref-2 read x=89
-10:45:32.010 INF hub: sys-1/ref-3 read x=89
-10:45:37.977 INF hub: sys-1/shoot-1 read x=89
-10:45:50.539 INF hub: sys-1/shoot-2 read x=0
-10:45:50.540 INF hub: sys-1/shoot-3 read x=0
-10:45:50.541 INF hub: sys-1/shoot-1 read x=89
-10:45:50.541 INF hub: sys-1/shoot-2 finished writing x
-10:45:50.553 INF hub: sys-1/shoot-1 finished writing x
-10:45:50.560 INF hub: sys-1/shoot-2 finished writing x
-10:45:50.560 INF hub: sys-1/shoot-1 finished writing x
-10:46:02.639 INF hub: sys-1/shoot-2 read x=89
-10:46:11.803 INF hub: sys-1/shoot-3 read x=0
-10:46:15.850 INF hub: sys-1/shoot-1 read x=89
-10:46:22.557 INF hub: sys-1/shoot-1 read x=0
-10:46:26.127 INF hub: sys-1/shoot-1 read x=0
-10:46:26.139 INF hub: sys-1/shoot-1 finished writing x
-10:46:26.139 INF hub: sys-1/shoot-1 finished writing x
-10:46:26.139 INF hub: sys-1/shoot-1 finished writing x
-10:46:29.775 INF hub: sys-1/shoot-1 read x=0
-10:46:35.516 INF hub: sys-1/shoot-2 read x=0
-10:46:40.237 INF hub: sys-1/shoot-3 read x=0
+20:27:52.045 INF hub: Listening on 127.0.0.1:5000
+20:27:52.045 INF ref-1: listening on 127.0.0.1:5001
+20:27:52.045 INF ref-2: listening on 127.0.0.1:5002
+20:27:52.045 INF ref-3: listening on 127.0.0.1:5003
+20:27:52.047 INF hub: Received registration from ref-1
+20:27:52.047 INF hub: Received registration from ref-3
+20:27:52.048 INF hub: Received registration from ref-2
+20:27:54.757 INF hub: Received registration from shoot-1
+20:27:54.758 INF hub: Received registration from shoot-2
+20:27:54.758 INF hub: Received registration from shoot-3
+20:27:57.357 INF ref-1: Starting system sys-1 ...
+20:27:57.357 INF                     ref-2: Starting system sys-1 ...
+20:27:57.358 INF                                         ref-3: Starting system sys-1 ...
+20:28:20.390 INF hub: sys-1/ref-2 read x=undefined
+20:28:20.390 INF hub: sys-1/ref-1 read x=undefined
+20:28:20.390 INF hub: sys-1/ref-3 read x=undefined
+20:28:20.393 INF hub: sys-1/shoot-1 finished writing x
+20:28:20.393 INF hub: sys-1/shoot-1 finished writing x
+20:28:20.393 INF hub: sys-1/shoot-1 finished writing x
+20:28:20.393 INF hub: sys-1/shoot-1 finished writing x

@@ -18,8 +18,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       :PROC_DESTROY_SYSTEM -> Logger.info("APP_LAYER: Hub destroyed process system.")
       :PROC_INITIALIZE_SYSTEM -> initialize_system(message, state)
       :APP_BROADCAST -> send_broadcast_message(message, state)
-      :APP_WRITE -> send_nnar_broadcast_read(message, state)
-      :APP_READ -> send_nnar_broadcast_read(message, state)
+      type when type in [:APP_WRITE, :APP_READ] -> send_nnar_broadcast_read(message, state)
     end
   end
 
@@ -33,13 +32,52 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     end
   end
 
+  ## CHECKED !!!
   defp receive_nnar_internal_read_message(message, state) do
     keys = [:bebDeliver, :message, :nnarInternalRead, :readId]
-    read_id_received = get_in(message, Enum.map(keys, &Access.key!(&1)))
+    request_id_received = get_in(message, Enum.map(keys, &Access.key!(&1)))
 
-    # abstraction_id = "app.nnar[" <> state.register_to_be_written <> "].pl"
-    abstraction_id = "app.nnar[x].pl"
+    keys = [:bebDeliver, :message, :ToAbstractionId]
+    register_name =
+      get_in(message, Enum.map(keys, &Access.key!(&1)))
+      |> then(fn abstraction -> Regex.named_captures(~r/\[(?<register_name>.*)\]/, abstraction) end)
+      |> Map.get("register_name")
+
+    abstraction_id = "app.nnar[" <> register_name <> "].pl"
     cut_abstraction_name = fn x -> String.split(x, ".") |> Enum.drop(-1) |> Enum.join(".") end
+
+    registers =
+      if not Map.has_key?(state.registers, register_name) do
+        Map.put(state.registers, register_name,
+          %{
+            timestamp_rank_value_tuple: TimestampRankPair.new(),
+            writeval: nil,
+            readval: nil,
+            read_list: [],
+            reading: false,
+            acknowledgments: 0,
+            request_id: request_id_received
+           }
+        )
+      else
+        current_register_state = Map.get(state.registers, register_name)
+        Map.put(state.registers, register_name,
+          %{
+            timestamp_rank_value_tuple: current_register_state.timestamp_rank_value_tuple,
+            writeval: current_register_state.writeval,
+            readval: current_register_state.readval,
+            read_list: current_register_state.read_list,
+            reading: false,
+            acknowledgments: 0,
+            request_id: request_id_received
+           }
+        )
+      end
+
+    new_state = %{state | registers: registers}
+    GenServer.call(state.pl_memory_pid, {:save_register_writer_data, new_state.registers})
+
+    Logger.info("NNAR_INTERNAL_READ #{state.owner}-#{state.process_index} MESSAGE RECEIVED, SENDING VALUE FROM REGISTER #{register_name}, ABSTRACTION ID #{abstraction_id}")
     updated_message = %Proto.Message {
       type: :PL_SEND,
       FromAbstractionId: abstraction_id,
@@ -51,33 +89,41 @@ defmodule DistributedAlgorithmsApp.AppLayer do
           FromAbstractionId: cut_abstraction_name.(abstraction_id),
           ToAbstractionId: cut_abstraction_name.(abstraction_id),
           nnarInternalValue: %Proto.NnarInternalValue {
-            readId: read_id_received,
-            timestamp: state.timestamp_rank_struct.timestamp,
-            writerRank: state.timestamp_rank_struct.writer_rank,
-            value: state.timestamp_rank_struct.value
+            readId: request_id_received,
+            timestamp: Map.get(registers, register_name).timestamp_rank_value_tuple.timestamp,
+            writerRank: Map.get(registers, register_name).timestamp_rank_value_tuple.writer_rank,
+            value: Map.get(registers, register_name).timestamp_rank_value_tuple.value
           }
         }
       }
     }
 
-    PerfectLinkLayer.send_value_to_process(updated_message, state)
+    PerfectLinkLayer.send_value_to_process(updated_message, new_state)
   end
 
+  ## CHECKED !!!
   defp receive_nnar_internal_write_message(message, state) do
-    Logger.info("NNAR_INTERNAL_WRITE #{state.owner}-#{state.process_index} MESSAGE RECEIVED")
     received_struct = TimestampRankPair.new(
       message.bebDeliver.message.nnarInternalWrite.timestamp,
       message.bebDeliver.message.nnarInternalWrite.writerRank,
       message.bebDeliver.message.nnarInternalWrite.value
     )
 
-    if TimestampRankPair.compare(received_struct, state.timestamp_rank_struct) do
-      GenServer.call(state.pl_memory_pid, {:save_new_timestamp_rank_pair, received_struct})
+    keys = [:bebDeliver, :message, :ToAbstractionId]
+    register_to_write =
+      get_in(message, Enum.map(keys, &Access.key!(&1)))
+      |> then(fn abstraction -> Regex.named_captures(~r/\[(?<register_name>.*)\]/, abstraction) end)
+      |> Map.get("register_name")
+
+    abstraction_id = "app.nnar[" <> register_to_write <> "].pl"
+    cut_abstraction_name = fn x -> String.split(x, ".") |> Enum.drop(-1) |> Enum.join(".") end
+
+    Logger.info("NNAR_INTERNAL_WRITE #{state.owner}-#{state.process_index} MESSAGE RECEIVED, WRITING TO REGISTER #{register_to_write}, ABSTRACTION ID #{abstraction_id}")
+
+    if TimestampRankPair.compare(received_struct, Map.get(state.registers, register_to_write).timestamp_rank_value_tuple) do
+      GenServer.call(state.pl_memory_pid, {:save_new_timestamp_rank_pair, received_struct, register_to_write})
     end
 
-    # abstraction_id = "app.nnar[" <> state.register_to_be_written <> "].pl"
-    abstraction_id = "app.nnar[x].pl"
-    cut_abstraction_name = fn x -> String.split(x, ".") |> Enum.drop(-1) |> Enum.join(".") end
     acknowledgment_message = %Proto.Message {
       type: :PL_SEND,
       FromAbstractionId: abstraction_id,
@@ -98,104 +144,106 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     PerfectLinkLayer.send_value_to_process(acknowledgment_message, state)
   end
 
-  defp receive_nnar_internal_ack_message(message, state) when message.bebDeliver.message.nnarInternalAck.readId == state.request_id do
-    Logger.info("=============== #{state.process_id_struct.owner}-#{state.process_id_struct.index} =================NNAR_INTERNAL_ACK MESSAGE RECEIVED: #{state.register} #{state.value}=======================================")
-    acknowledgments = GenServer.call(state.pl_memory_pid, :increment_ack_counter)
-    n = length(state.process_id_structs)
-    if acknowledgments > div(n, 2) do
-      GenServer.call(state.pl_memory_pid, :reset_ack_counter)
-      if state.reading == true do
-        GenServer.call(state.pl_memory_pid, {:update_reading_flag, false})
-        response = %Proto.Message {
-          type: :APP_READ_RETURN,
-          appReadReturn: %Proto.AppReadReturn {
-            register: state.register,
-            value: state.timestamp_rank_struct.value
-          }
-        }
-        new_state = GenServer.call(state.pl_memory_pid, :get_state)
-        NnAtomicRegisterLayer.send_app_return_message(response, new_state)
-      else
-        GenServer.call(state.pl_memory_pid, {:save_register_value, state.register, state.value})
-        response = %Proto.Message {
-          type: :APP_WRITE_RETURN,
-          appWriteReturn: %Proto.AppWriteReturn {
-            register: state.register
-          }
-        }
+  ## CHECKED
+  defp receive_nnar_internal_ack_message(message, state) do
+    keys = [:bebDeliver, :message, :ToAbstractionId]
+    register_name =
+      get_in(message, Enum.map(keys, &Access.key!(&1)))
+      |> then(fn abstraction -> Regex.named_captures(~r/\[(?<register_name>.*)\]/, abstraction) end)
+      |> Map.get("register_name")
+
+    current_register = Map.get(state.registers, register_name)
+
+    if message.bebDeliver.message.nnarInternalAck.readId == current_register.request_id do
+      Logger.info("NNAR_INTERNAL_ACK MESSAGE RECEIVED BY #{state.process_id_struct.owner}-#{state.process_id_struct.index}: #{current_register.request_id}")
+      acknowledgments = GenServer.call(state.pl_memory_pid, {:increment_ack_counter, register_name})
+      n = length(state.process_id_structs)
+
+      abstraction_id = "app.nnar[" <> register_name <> "].pl"
+      # cut_abstraction_name = fn x -> String.split(x, ".") |> Enum.drop(-1) |> Enum.join(".") end
+
+      if acknowledgments > div(n, 2) do
+        GenServer.call(state.pl_memory_pid, {:reset_ack_counter, register_name})
+        response =
+          if current_register.reading == true do
+            %Proto.Message {
+              type: :APP_READ_RETURN,
+              FromAbstractionId: abstraction_id,
+              ToAbstractionId: abstraction_id,
+              appReadReturn: %Proto.AppReadReturn {
+                register: register_name,
+                value: current_register.readval
+              }
+            }
+          else
+            %Proto.Message {
+              type: :APP_WRITE_RETURN,
+              FromAbstractionId: abstraction_id,
+              ToAbstractionId: abstraction_id,
+              appWriteReturn: %Proto.AppWriteReturn {
+                register: register_name
+              }
+            }
+          end
         new_state = GenServer.call(state.pl_memory_pid, :get_state)
         NnAtomicRegisterLayer.send_app_return_message(response, new_state)
       end
     end
   end
-  defp receive_nnar_internal_ack_message(_message, _state), do: nil
 
+  ## CHECKED !!!
   defp receive_nnar_internal_value_message(message, state) do
     nnar_value = message.bebDeliver.message.nnarInternalValue
+    keys = [:bebDeliver, :message, :ToAbstractionId]
+    register_name =
+      get_in(message, Enum.map(keys, &Access.key!(&1)))
+      |> then(fn abstraction -> Regex.named_captures(~r/\[(?<register_name>.*)\]/, abstraction) end)
+      |> Map.get("register_name")
 
-    if nnar_value.readId == state.request_id do
-      new_read_list = [nnar_value | state.read_list]
-      GenServer.call(state.pl_memory_pid, {:save_readlist_entries, new_read_list})
-      if length(new_read_list) > div(length(state.process_id_structs), 2) do
-        value = Enum.max(new_read_list, fn x, y -> x.timestamp > y.timestamp or (x.timestamp == y.timestamp and x.writerRank > y.writerRank) end)
-        new_timestamp_rank_pair = %TimestampRankPair{timestamp: value.timestamp, writer_rank: value.writerRank, value: value.value}
-        GenServer.call(state.pl_memory_pid, {:save_new_timestamp_rank_pair, new_timestamp_rank_pair})
-        GenServer.call(state.pl_memory_pid, {:save_readlist_entries, []})
+    # abstraction_id = "app.nnar[" <> register_name <> "].pl"
+    # cut_abstraction_name = fn x -> String.split(x, ".") |> Enum.drop(-1) |> Enum.join(".") end
 
-        Logger.info("APP_LAYER READING=#{state.reading}: STEP 3 -> BROADCASTING NNAR_INTERNAL_WRITE...")
-        if state.reading == True do
-          broadcasted_message = %Proto.Message {
+    if nnar_value.readId == Map.get(state.registers, register_name).request_id do
+      new_read_list_entry = TimestampRankPair.new(nnar_value.timestamp, nnar_value.writerRank, nnar_value.value)
+      new_read_list = [new_read_list_entry | Map.get(state.registers, register_name).read_list]
+      new_state = GenServer.call(state.pl_memory_pid, {:save_register_readlist_entry, new_read_list_entry, register_name})
+
+      if length(new_read_list) > div(length(new_state.process_id_structs), 2) do
+        new_timestamp_rank_tuple = Enum.max(new_read_list, fn x, y -> TimestampRankPair.compare(x, y) end)
+        GenServer.call(state.pl_memory_pid, {:save_new_timestamp_rank_pair, new_timestamp_rank_tuple, register_name})
+        internal_write_message =
+          if Map.get(new_state.registers, register_name).reading == true do
+            %Proto.NnarInternalWrite {
+              readId: nnar_value.readId,
+              timestamp: new_timestamp_rank_tuple.timestamp,
+              writerRank: new_timestamp_rank_tuple.writerRank,
+              value: Map.get(new_state.registers, register_name).readval
+            }
+          else
+            %Proto.NnarInternalWrite {
+              readId: nnar_value.readId,
+              timestamp: new_timestamp_rank_tuple.timestamp + 1,
+              writerRank: new_state.process_id_struct.rank,
+              value: Map.get(new_state.registers, register_name).writeval
+            }
+          end
+
+        broadcasted_message =
+          %Proto.Message {
             type: :BEB_BROADCAST,
-            FromAbstractionId: "app.nnar[" <> state.register <> "]",
-            ToAbstractionId: "app.nnar[" <> state.register <> "].beb",
+            FromAbstractionId: "app.nnar[" <> register_name <> "]",
+            ToAbstractionId: "app.nnar[" <> register_name <> "].beb",
             bebBroadcast: %Proto.BebBroadcast {
               message: %Proto.Message {
                 type: :NNAR_INTERNAL_WRITE,
                 FromAbstractionId: "app",
                 ToAbstractionId: "app",
-                nnarInternalWrite: %Proto.NnarInternalWrite {
-                  readId: value.readId,
-                  timestamp: value.timestamp,
-                  writerRank: value.writerRank,
-                  value: %Proto.Value {
-                    defined: true,
-                    v: value.value
-                  }
-                }
+                nnarInternalWrite: internal_write_message
               }
             }
           }
 
-          Enum.each(state.process_id_structs, fn x ->
-            BestEffortBroadcastLayer.send_broadcast_message(broadcasted_message, x, state)
-          end)
-        else
-          broadcasted_message = %Proto.Message {
-            type: :BEB_BROADCAST,
-            FromAbstractionId: "app.nnar[" <> state.register <> "]",
-            ToAbstractionId: "app.nnar[" <> state.register <> "].beb",
-            bebBroadcast: %Proto.BebBroadcast {
-              message: %Proto.Message {
-                type: :NNAR_INTERNAL_WRITE,
-                FromAbstractionId: "app",
-                ToAbstractionId: "app",
-                nnarInternalWrite: %Proto.NnarInternalWrite {
-                  readId: nnar_value.readId,
-                  timestamp: value.timestamp + 1,
-                  writerRank: state.process_id_struct.rank,
-                  value: %Proto.Value {
-                    defined: true,
-                    v: state.value
-                  }
-                }
-              }
-            }
-          }
-
-          Enum.each(state.process_id_structs, fn x ->
-            BestEffortBroadcastLayer.send_broadcast_message(broadcasted_message, x, state)
-          end)
-        end
+        Enum.each(state.process_id_structs, fn x -> BestEffortBroadcastLayer.send_broadcast_message(broadcasted_message, x, new_state) end)
       end
     end
   end

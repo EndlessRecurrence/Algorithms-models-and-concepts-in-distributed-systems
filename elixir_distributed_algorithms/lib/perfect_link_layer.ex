@@ -25,13 +25,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
       owner: nickname,
       process_id_structs: nil,
       process_id_struct: nil,
-      timestamp_rank_struct: struct(TimestampRankPair),
-      acknowledgments: 0,
-      value: nil,
-      request_id: 0,
-      read_list: [],
-      reading: false,
-      register: nil,
+      timestamp_rank_value_tuple: struct(TimestampRankPair),
       registers: %{}
     }
 
@@ -93,6 +87,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
   def deliver_message(message, state) do
     # Logger.info("PERFECT_LINK_LAYER: Delivering a message...")
 
+    IO.inspect message, label: "#{state.owner}-#{state.process_index}'S PERFECT LINK DELIVERED MESSAGE", limit: :infinity
     updated_message = %Proto.Message {
       systemId: message.systemId,
       type: :PL_DELIVER,
@@ -167,7 +162,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
       }
     }
 
-    IO.inspect message_to_broadcast, label: "================ BROADCASTED MESSAGE ===============", limit: :infinity
+    #IO.inspect message_to_broadcast, label: "================ BROADCASTED MESSAGE ===============", limit: :infinity
     encoded_broadcast_message = Protobuf.encode(message_to_broadcast)
 
     process_address_bytes = Regex.split(~r/\./, destination.host)

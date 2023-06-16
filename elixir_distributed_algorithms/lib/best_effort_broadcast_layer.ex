@@ -59,7 +59,7 @@ defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
         type: :PL_SEND,
         FromAbstractionId: to_abstraction_id,
         ToAbstractionId: to_abstraction_id <> ".pl",
-        plSend: %Proto.PlSend{
+        plSend: %Proto.PlSend {
           destination: x,
           message: message.bebBroadcast.message
         }
