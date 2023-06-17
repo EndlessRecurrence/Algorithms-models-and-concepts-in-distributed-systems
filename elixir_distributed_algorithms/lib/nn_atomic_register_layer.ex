@@ -93,8 +93,10 @@ defmodule DistributedAlgorithmsApp.NnAtomicRegisterLayer do
        }
     )
 
+    IO.inspect updated_registers, label: "UPDATED REGISTERS FROM #{state.process_id_struct.owner}-#{state.process_id_struct.index}"
+
     new_state = %{state | registers: updated_registers}
-    GenServer.call(state.pl_memory_pid, {:save_register_reader_data, new_state.registers})
+    GenServer.call(state.pl_memory_pid, {:save_register_reader_data, updated_registers})
 
     broadcasted_message = %Proto.Message {
       type: :BEB_BROADCAST,

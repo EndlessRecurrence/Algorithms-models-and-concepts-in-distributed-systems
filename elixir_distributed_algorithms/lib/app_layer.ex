@@ -152,7 +152,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       |> then(fn abstraction -> Regex.named_captures(~r/\[(?<register_name>.*)\]/, abstraction) end)
       |> Map.get("register_name")
 
-    current_register = Map.get(state.registers, register_name)
+    current_register = GenServer.call(state.pl_memory_pid, {:get_register, register_name})
 
     if message.bebDeliver.message.nnarInternalAck.readId == current_register.request_id do
       Logger.info("NNAR_INTERNAL_ACK MESSAGE RECEIVED BY #{state.process_id_struct.owner}-#{state.process_id_struct.index}: #{current_register.request_id}")
@@ -160,12 +160,13 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       n = length(state.process_id_structs)
 
       abstraction_id = "app.nnar[" <> register_name <> "].pl"
-      # cut_abstraction_name = fn x -> String.split(x, ".") |> Enum.drop(-1) |> Enum.join(".") end
 
       if acknowledgments > div(n, 2) do
+        Logger.info("ACKNOWLEDGMENT MAJORITY")
         GenServer.call(state.pl_memory_pid, {:reset_ack_counter, register_name})
         response =
           if current_register.reading == true do
+            Logger.info("READING FLAG IS TRUE #{state.process_id_struct.owner}-#{state.process_id_struct.index}")
             %Proto.Message {
               type: :APP_READ_RETURN,
               FromAbstractionId: abstraction_id,
@@ -216,7 +217,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
             %Proto.NnarInternalWrite {
               readId: nnar_value.readId,
               timestamp: new_timestamp_rank_tuple.timestamp,
-              writerRank: new_timestamp_rank_tuple.writerRank,
+              writerRank: new_timestamp_rank_tuple.writer_rank,
               value: Map.get(new_state.registers, register_name).readval
             }
           else
