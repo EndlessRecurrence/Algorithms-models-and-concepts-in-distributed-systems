@@ -101,6 +101,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
     cond do
       to_abstraction_id == "app.pl" -> AppLayer.receive_message(updated_message, state)
       to_abstraction_id == "app.beb.pl" -> BestEffortBroadcastLayer.receive_message(updated_message, state)
+      Regex.run(~r/epfd/, to_abstraction_id) != nil -> send(state.epfd_id, {updated_message, state})
       Regex.run(~r/nnar/, to_abstraction_id) != nil -> BestEffortBroadcastLayer.receive_message(updated_message, state)
       Regex.run(~r/nnar/, deep_to_abstraction_id) != nil -> BestEffortBroadcastLayer.receive_message(updated_message, state)
       true -> AppLayer.receive_message(updated_message, state)

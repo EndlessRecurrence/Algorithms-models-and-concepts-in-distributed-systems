@@ -301,8 +301,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     process_id_struct = broadcasted_process_id_structs_from_hub |> Enum.filter(fn x -> condition_lambda.(x) end) |> Enum.at(0)
     other_process_id_structs = broadcasted_process_id_structs_from_hub |> Enum.reject(fn x -> condition_lambda.(x) end)
 
-    GenServer.call(state.pl_memory_pid, {:save_process_id_structs, other_process_id_structs, process_id_struct})
-    GenServer.call(state.pl_memory_pid, {:save_system_id, message.systemId})
+    GenServer.call(state.pl_memory_pid, {:save_process_id_structs, other_process_id_structs, process_id_struct, message.systemId})
   end
 
 end

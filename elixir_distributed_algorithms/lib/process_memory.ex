@@ -14,13 +14,16 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
 
   ## CHECKED !!!
   @impl true
-  def handle_call({:save_process_id_structs, process_id_structs, process_id_struct}, _from, state) do
+  def handle_call({:save_process_id_structs, process_id_structs, process_id_struct, system_id}, _from, state) do
     # Logger.info("PROCESS_MEMORY: SAVE_PROCESS_ID_STRUCTS")
-    epfd_state = %{
+    epfd_state = Map.merge(state, %{
       alive: process_id_structs,
       suspected: [],
-      delay: 100 # 100 milliseconds, 0.1 seconds
-    }
+      delay: 100, # 100 milliseconds, 0.1 seconds
+      process_id_structs: process_id_structs,
+      process_id_struct: process_id_struct,
+      system_id: system_id
+    })
 
     epfd_id =
       case EventuallyPerfectFailureDetector.start_link(epfd_state) do
@@ -36,17 +39,9 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       |> Map.put(:process_id_struct, process_id_struct)
       |> Map.put(:process_id_structs, process_id_structs)
       |> Map.put(:epfd_id, epfd_id)
+      |> Map.put(:system_id, system_id)
 
     {:reply, {process_id_structs, process_id_struct}, new_state}
-  end
-
-  ## CHECKED !!!
-  @impl true
-  def handle_call({:save_system_id, system_id}, _from, state) do
-    # Logger.info("PROCESS_MEMORY: SAVE_SYSTEM_ID")
-    new_state = state
-      |> Map.put(:system_id, system_id)
-    {:reply, system_id, new_state}
   end
 
   ## CHECKED !!!
