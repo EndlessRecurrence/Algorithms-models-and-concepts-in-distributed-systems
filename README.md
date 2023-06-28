@@ -377,3 +377,5 @@ Unlike linearizability, serializability does not—by itself—impose any real-t
 - [How is a process in Elixir different from system threads in other languages?](https://elixirforum.com/t/how-is-process-in-elixir-different-with-system-thread-in-other-language/28076)
 
 - [Why is data deep-copied when sending it to another process?](https://elixirforum.com/t/why-is-data-deep-copied-when-sending-to-another-process/26330)
+
+- [How to create a periodical timer in Elixir?](https://stackoverflow.com/questions/69839878/how-to-create-periodical-timer-with-elixir)

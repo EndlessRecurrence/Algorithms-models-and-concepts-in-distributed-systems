@@ -4,7 +4,6 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
   alias DistributedAlgorithmsApp.ProcessMemory
   alias DistributedAlgorithmsApp.AppLayer
   alias DistributedAlgorithmsApp.BestEffortBroadcastLayer
-  alias DistributedAlgorithmsApp.TimestampRankPair
 
   def accept(port, process_index, nickname, hub_address, hub_port) do
     {:ok, socket} = :gen_tcp.listen(port, [:binary, packet: 0, active: false, reuseaddr: true])
@@ -18,6 +17,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
 
   defp start_layer_memory_process!(hub_address, hub_port, process_index, nickname) do
     # Logger.info("PERFECT_LINK_LAYER_MEMORY process started...")
+
     initial_state = %{
       hub_address: hub_address,
       hub_port: hub_port,
@@ -25,7 +25,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
       owner: nickname,
       process_id_structs: nil,
       process_id_struct: nil,
-      registers: %{}
+      registers: %{},
     }
 
     case ProcessMemory.start_link(initial_state) do

@@ -1,6 +1,7 @@
 defmodule DistributedAlgorithmsApp.ProcessMemory do
   use GenServer
   require Logger
+  alias DistributedAlgorithmsApp.EventuallyPerfectFailureDetector
 
   def start_link(args) do
     GenServer.start_link(__MODULE__, args)
@@ -15,9 +16,27 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
   @impl true
   def handle_call({:save_process_id_structs, process_id_structs, process_id_struct}, _from, state) do
     # Logger.info("PROCESS_MEMORY: SAVE_PROCESS_ID_STRUCTS")
+    epfd_state = %{
+      alive: process_id_structs,
+      suspected: [],
+      delay: 100 # 100 milliseconds, 0.1 seconds
+    }
+
+    epfd_id =
+      case EventuallyPerfectFailureDetector.start_link(epfd_state) do
+        {:ok, pid} -> pid
+        {:error, {:already_started, pid}} -> "EPFD #{pid} already started."
+        {:error, reason} -> raise RuntimeError, message: reason
+        _ -> raise RuntimeError, message: "start_link ignored, EPFD failed to start."
+      end
+
+    IO.inspect epfd_id, label: "EPFD ID"
+
     new_state = state
       |> Map.put(:process_id_struct, process_id_struct)
       |> Map.put(:process_id_structs, process_id_structs)
+      |> Map.put(:epfd_id, epfd_id)
+
     {:reply, {process_id_structs, process_id_struct}, new_state}
   end
 
