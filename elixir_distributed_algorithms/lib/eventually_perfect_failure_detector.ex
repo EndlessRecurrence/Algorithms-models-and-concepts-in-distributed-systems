@@ -1,6 +1,7 @@
 defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
   use GenServer
   alias DistributedAlgorithmsApp.PerfectLinkLayer
+  alias DistributedAlgorithmsApp.EventualLeaderDetector
   require Logger
 
   def start_link(args) do
@@ -24,10 +25,10 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
         new_suspected =
           cond do
             Enum.member?(state.alive, x) == false and Enum.member?(suspected, x) == false ->
-              # pass <Suspected | P> event upwards
-              [x | suspected]
+              EventualLeaderDetector.receive_epfd_suspect_event(x, Map.put(state, :suspected, Enum.uniq([x | suspected])))
+              Enum.uniq([x | suspected])
             Enum.member?(state.alive, x) and Enum.member?(suspected, x) ->
-              # pass <Restore | P> event upwards
+              EventualLeaderDetector.receive_epfd_restore_event(x, Map.put(state, :suspected, Enum.filter(suspected, fn y -> y != x end)))
               Enum.filter(suspected, fn y -> y != x end)
             true -> suspected
           end
@@ -61,7 +62,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
   end
 
   @impl
-  def handle_info({:EPFD_INTERNAL_HEARTBEAT_REQUEST, message}, state) do
+  def handle_info({:EPFD_INTERNAL_HEARTBEAT_REQUEST, message, pl_state}, current_state) do
     IO.inspect message, label: "Request heartbeat message caught in generic handler @ EFPD", limit: :infinity
 
     heartbeat_reply_message = %Proto.Message {
@@ -79,17 +80,18 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
       }
     }
 
-    PerfectLinkLayer.send_value_to_process(heartbeat_reply_message, state)
-    {:noreply, state}
+    new_state = Map.merge(pl_state, current_state)
+    PerfectLinkLayer.send_value_to_process(heartbeat_reply_message, new_state)
+    {:noreply, new_state}
   end
 
   @impl
-  def handle_info({:EPFD_INTERNAL_HEARTBEAT_REPLY, message}, state) do
+  def handle_info({:EPFD_INTERNAL_HEARTBEAT_REPLY, message, pl_state}, current_state) do
     IO.inspect message, label: "Reply heartbeat message caught in generic handler @ EFPD", limit: :infinity
-    updated_alive_list =
-      [message.plDeliver.sender | Map.get(state, :alive)]
-      |> Enum.uniq()
-    {:noreply, Map.put(state, :alive, updated_alive_list)}
+    updated_alive_list = [message.plDeliver.sender | Map.get(current_state, :alive)] |> Enum.uniq()
+    state_with_new_alive_list = Map.put(current_state, :alive, updated_alive_list)
+    new_state = Map.merge(pl_state, state_with_new_alive_list)
+    {:noreply, new_state}
   end
 
 end

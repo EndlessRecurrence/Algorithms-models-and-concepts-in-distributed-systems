@@ -20,6 +20,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       alive: process_id_structs,
       suspected: [],
       delay: 100, # 100 milliseconds, 0.1 seconds
+      leader: nil,
       process_id_structs: process_id_structs,
       process_id_struct: process_id_struct,
       system_id: system_id
@@ -38,8 +39,21 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       |> Map.put(:process_id_structs, process_id_structs)
       |> Map.put(:epfd_id, epfd_id)
       |> Map.put(:system_id, system_id)
+      |> Map.put(:leader, nil)
 
     {:reply, {process_id_structs, process_id_struct}, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_suspected_list, new_suspected}, _from, state) do
+    new_state = state |> Map.put(:suspected, new_suspected)
+    {:reply, {new_suspected}, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_leader, new_leader}, _from, state) do
+    new_state = state |> Map.put(:leader, new_leader)
+    {:reply, {new_leader}, new_state}
   end
 
   ## CHECKED !!!

@@ -105,7 +105,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
 
     cond do
       message_type == :EPFD_INTERNAL_HEARTBEAT_REQUEST or message_type == :EPFD_INTERNAL_HEARTBEAT_REPLY ->
-        send(state.epfd_id, {message_type, updated_message}) # might be necessary to pass the state from here...
+        send(state.epfd_id, {message_type, updated_message, state})
       to_abstraction_id == "app.pl" -> AppLayer.receive_message(updated_message, state)
       to_abstraction_id == "app.beb.pl" -> BestEffortBroadcastLayer.receive_message(updated_message, state)
       Regex.run(~r/nnar/, to_abstraction_id) != nil -> BestEffortBroadcastLayer.receive_message(updated_message, state)
