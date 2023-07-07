@@ -17,10 +17,16 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
   def handle_call({:save_process_id_structs, process_id_structs, process_id_struct, system_id}, _from, state) do
     # Logger.info("PROCESS_MEMORY: SAVE_PROCESS_ID_STRUCTS")
     epfd_state = Map.merge(state, %{
+      ### eventually perfect failure detector variables
       alive: process_id_structs,
       suspected: [],
       delay: 100, # 100 milliseconds, 0.1 seconds
+      ### epoch change variables
       leader: nil,
+      trusted: Enum.min_by(process_id_structs, fn x -> x.rank end),
+      lastts: 0,
+      ts: process_id_struct.rank,
+      ### process variables
       process_id_structs: process_id_structs,
       process_id_struct: process_id_struct,
       system_id: system_id
@@ -54,6 +60,18 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
   def handle_call({:update_leader, new_leader}, _from, state) do
     new_state = state |> Map.put(:leader, new_leader)
     {:reply, {new_leader}, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_trusted, new_trusted}, _from, state) do
+    new_state = state |> Map.put(:trusted, new_trusted)
+    {:reply, {new_trusted}, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_ts, new_ts}, _from, state) do
+    new_state = state |> Map.put(:ts, new_ts)
+    {:reply, {new_ts}, new_state}
   end
 
   ## CHECKED !!!

@@ -21,7 +21,7 @@ defmodule DistributedAlgorithmsApp.EventualLeaderDetector do
 
     if leader != process_with_strongest_rank do
       GenServer.call(state.pl_memory_pid, {:update_leader, process_with_strongest_rank})
-      # EpochChange.receive_trust_event(leader, state)
+      EpochChange.receive_trust_event(leader, state)
     end
   end
 
