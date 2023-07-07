@@ -34,13 +34,13 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
 
         heartbeat_request_message = %Proto.Message {
           ToAbstractionId: "app.pl",
-          FromAbstractionId: "app.epfd.pl",
+          FromAbstractionId: "app.pl",
           type: :PL_SEND,
           plSend: %Proto.PlSend {
             destination: x,
             message: %Proto.Message {
-              ToAbstractionId: "app.pl",
-              FromAbstractionId: "app.epfd.pl",
+              ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+              FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
               type: :EPFD_INTERNAL_HEARTBEAT_REQUEST,
               epfdInternalHeartbeatRequest: %Proto.EpfdInternalHeartbeatRequest{}
             }
@@ -60,12 +60,36 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
     {:noreply, new_state}
   end
 
-  def receive_message(_message, _state) do
+  @impl
+  def handle_info({:EPFD_INTERNAL_HEARTBEAT_REQUEST, message}, state) do
+    IO.inspect message, label: "Request heartbeat message caught in generic handler @ EFPD", limit: :infinity
 
+    heartbeat_reply_message = %Proto.Message {
+      ToAbstractionId: "app.pl",
+      FromAbstractionId: "app.pl",
+      type: :PL_SEND,
+      plSend: %Proto.PlSend {
+        destination: message.plDeliver.sender,
+        message: %Proto.Message {
+          ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+          FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+          type: :EPFD_INTERNAL_HEARTBEAT_REPLY,
+          epfdInternalHeartbeatReply: %Proto.EpfdInternalHeartbeatReply{}
+        }
+      }
+    }
+
+    PerfectLinkLayer.send_value_to_process(heartbeat_reply_message, state)
+    {:noreply, state}
   end
 
-  def deliver_message(_message, _state) do
-
+  @impl
+  def handle_info({:EPFD_INTERNAL_HEARTBEAT_REPLY, message}, state) do
+    IO.inspect message, label: "Reply heartbeat message caught in generic handler @ EFPD", limit: :infinity
+    updated_alive_list =
+      [message.plDeliver.sender | Map.get(state, :alive)]
+      |> Enum.uniq()
+    {:noreply, Map.put(state, :alive, updated_alive_list)}
   end
 
 end

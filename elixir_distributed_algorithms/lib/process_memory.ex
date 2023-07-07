@@ -33,8 +33,6 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
         _ -> raise RuntimeError, message: "start_link ignored, EPFD failed to start."
       end
 
-    IO.inspect epfd_id, label: "EPFD ID"
-
     new_state = state
       |> Map.put(:process_id_struct, process_id_struct)
       |> Map.put(:process_id_structs, process_id_structs)

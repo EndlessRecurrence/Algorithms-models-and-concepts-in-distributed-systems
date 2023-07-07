@@ -98,10 +98,16 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
     keys = [:plDeliver, :message, :ToAbstractionId]
     to_abstraction_id = Map.get(message, :ToAbstractionId)
     deep_to_abstraction_id = get_in(message, Enum.map(keys, &Access.key!(&1)))
+    message_type = message.networkMessage.message.type
+
+    # IO.inspect to_abstraction_id, label: "Received ToAbstractionId"
+    # IO.inspect deep_to_abstraction_id, label: "Received DeepToAbstractionId"
+
     cond do
+      message_type == :EPFD_INTERNAL_HEARTBEAT_REQUEST or message_type == :EPFD_INTERNAL_HEARTBEAT_REPLY ->
+        send(state.epfd_id, {message_type, updated_message}) # might be necessary to pass the state from here...
       to_abstraction_id == "app.pl" -> AppLayer.receive_message(updated_message, state)
       to_abstraction_id == "app.beb.pl" -> BestEffortBroadcastLayer.receive_message(updated_message, state)
-      Regex.run(~r/epfd/, to_abstraction_id) != nil -> send(state.epfd_id, {updated_message, state})
       Regex.run(~r/nnar/, to_abstraction_id) != nil -> BestEffortBroadcastLayer.receive_message(updated_message, state)
       Regex.run(~r/nnar/, deep_to_abstraction_id) != nil -> BestEffortBroadcastLayer.receive_message(updated_message, state)
       true -> AppLayer.receive_message(updated_message, state)
