@@ -26,6 +26,19 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       trusted: Enum.min_by(process_id_structs, fn x -> x.rank end),
       lastts: 0,
       ts: process_id_struct.rank,
+      ### epoch consensus variables
+      valts_val_pair: {0, %Proto.Value{defined: false, v: nil}},
+      tmpval: %Proto.Value{defined: false, v: nil},
+      states: List.duplicate(nil, length(process_id_structs)),
+      accepted: 0,
+      ### uniform consensus variables
+      val: nil,
+      proposed: false,
+      decided: false,
+      # Obtain the leader l_0 of the initial epoch with timestamp 0 from epoch-change inst. ec;
+      # Initialize a new instance ep.0 of epoch consensus with timestamp 0, leader l_0 , and state (0, ⊥);
+      ets_leader_pair: {0, nil},
+      newts_newl_pair: {0, nil},
       ### process variables
       process_id_structs: process_id_structs,
       process_id_struct: process_id_struct,
@@ -46,6 +59,12 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       |> Map.put(:epfd_id, epfd_id)
       |> Map.put(:system_id, system_id)
       |> Map.put(:leader, nil)
+      |> Map.put(:trusted, Enum.min_by(process_id_structs, fn x -> x.rank end))
+      |> Map.put(:ts, process_id_struct.rank)
+      |> Map.put(:valts_val_pair, {0, %Proto.Value{defined: false, v: nil}})
+      |> Map.put(:tmpval, nil)
+      |> Map.put(:states, List.duplicate(nil, length(process_id_structs)))
+      |> Map.put(:accepted, 0)
 
     {:reply, {process_id_structs, process_id_struct}, new_state}
   end
@@ -53,25 +72,57 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
   @impl true
   def handle_call({:update_suspected_list, new_suspected}, _from, state) do
     new_state = state |> Map.put(:suspected, new_suspected)
-    {:reply, {new_suspected}, new_state}
+    {:reply, new_state.suspected, new_state}
   end
 
   @impl true
   def handle_call({:update_leader, new_leader}, _from, state) do
     new_state = state |> Map.put(:leader, new_leader)
-    {:reply, {new_leader}, new_state}
+    {:reply, new_state.leader, new_state}
   end
 
   @impl true
   def handle_call({:update_trusted, new_trusted}, _from, state) do
     new_state = state |> Map.put(:trusted, new_trusted)
-    {:reply, {new_trusted}, new_state}
+    {:reply, new_state.trusted, new_state}
   end
 
   @impl true
   def handle_call({:update_ts, new_ts}, _from, state) do
     new_state = state |> Map.put(:ts, new_ts)
-    {:reply, {new_ts}, new_state}
+    {:reply, new_state.ts, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_tmpval, proposed_value}, _from, state) do
+    new_state = state |> Map.put(:tmpval, proposed_value)
+    {:reply, new_state.tmpval, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_valts_val_pair, new_pair}, _from, state) do
+    new_state = state |> Map.put(:valts_val_pair, new_pair)
+    {:reply, new_state.valts_val_pair, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_states_pair, rank, new_pair}, _from, state) do
+    new_states_list = List.replace_at(state.states, rank, new_pair)
+    new_state = state |> Map.put(:states, new_states_list)
+    {:reply, new_state.states, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_accepted, new_accepted}, _from, state) do
+    new_state = state |> Map.put(:accepted, new_accepted)
+    {:reply, new_state.accepted, new_state}
+  end
+
+  @impl true
+  def handle_call(:reset_states, _from, state) do
+    new_states = List.duplicate(nil, length(state.process_id_structs))
+    new_state = state |> Map.put(:states, new_states)
+    {:reply, [], new_states, new_state}
   end
 
   ## CHECKED !!!
