@@ -1,6 +1,7 @@
 defmodule DistributedAlgorithmsApp.EpochChange do
   alias DistributedAlgorithmsApp.PerfectLinkLayer
   alias DistributedAlgorithmsApp.BestEffortBroadcastLayer
+  alias DistributedAlgorithmsApp.UniformConsensus
 
   def receive_trust_event(leader, state) do
     GenServer.call(state.pl_memory_pid, {:update_trusted, leader})
@@ -30,8 +31,18 @@ defmodule DistributedAlgorithmsApp.EpochChange do
     if message.bebDeliver.sender == state.trusted and newts > state.lastts do
       new_lastts = GenServer.call(state.pl_memory_pid, {:update_lastts, state.lastts + newts})
       # trigger <ec, StartEpoch | newts, l> event
+      start_epoch_message = %Proto.Message {
+        ToAbstractionId: "app.pl",
+        FromAbstractionId: "app.pl",
+        type: :EC_START_EPOCH,
+        ecStartEpoch: %Proto.EcStartEpoch {
+          newTimestamp: newts,
+          newLeader: message.bebDeliver.sender
+        }
+      }
+
+      UniformConsensus.receive_ec_startepoch_event(start_epoch_message, state)
     else
-      # trigger <pl, Send | l, [NACK]>
       nack_message = %Proto.Message {
         ToAbstractionId: "app.pl",
         FromAbstractionId: "app.pl",

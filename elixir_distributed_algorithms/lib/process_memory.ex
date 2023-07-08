@@ -65,6 +65,11 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       |> Map.put(:tmpval, nil)
       |> Map.put(:states, List.duplicate(nil, length(process_id_structs)))
       |> Map.put(:accepted, 0)
+      |> Map.put(val: nil)
+      |> Map.put(proposed: false)
+      |> Map.put(decided: false)
+      |> Map.put(ets_leader_pair: {0, nil})
+      |> Map.put(newts_newl_pair: {0, nil})
 
     {:reply, {process_id_structs, process_id_struct}, new_state}
   end
@@ -123,6 +128,18 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
     new_states = List.duplicate(nil, length(state.process_id_structs))
     new_state = state |> Map.put(:states, new_states)
     {:reply, [], new_states, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_newts_newl_pair, newts_newl_pair}, _from, state) do
+    new_state = state |> Map.put(:newts_newl_pair, newts_newl_pair)
+    {:reply, new_state.newts_newl_pair, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_ets_leader_pair, new_ets_leader_pair}, _from, state) do
+    new_state = state |> Map.put(:ets_leader_pair, new_ets_leader_pair)
+    {:reply, new_state.ets_leader_pair, new_state}
   end
 
   ## CHECKED !!!
