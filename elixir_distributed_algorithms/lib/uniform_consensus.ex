@@ -1,16 +1,26 @@
 defmodule DistributedAlgorithmsApp.UniformConsensus do
+  alias DistributedAlgorithmsApp.EpochConsensus
 
   def trigger_uc_propose_event(value, state) do
     GenServer.call(state.pl_memory_pid, {:update_val, value})
   end
 
   def receive_ec_startepoch_event(message, state) do
-    newts_newl_pair = {message.ecStartEpoch.newTimestamp, message.ecStartEpoch.newLeader}
-    GenServer.call(state.pl_memory_pid, {:update_newts_newl_pair, newts_newl_pair})
-    # trigger <ep.ets, Abort>
+    newts_newl_pair = GenServer.call(state.pl_memory_pid, {:update_newts_newl_pair, {message.ecStartEpoch.newTimestamp, message.ecStartEpoch.newLeader}})
+    new_state = state
+      |> Map.put(newts_newl_pair: newts_newl_pair)
+
+    ep_abort_message = %Proto.Message {
+      FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+      ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+      type: :EP_ABORT,
+      epAbort: %Proto.EpAbort {}
+    }
+
+    EpochConsensus.receive_ep_abort_message(ep_abort_message, new_state)
   end
 
-  def receive_ep_aborted_event(message, state) do
+  def deliver_ep_aborted_event(message, state) do
     new_state =
       if state.ts == elem(state.ets_leader_pair, 0) do
         GenServer.call(state.pl_memory_pid, {:update_ets_leader_pair, state.newts_newl_pair})
@@ -28,7 +38,7 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
     end
   end
 
-  def receive_ep_decide_event(message, state) when state.ts == elem(state.ets_leader_pair, 0) do
+  def deliver_ep_decide_event(message, state) when state.ts == elem(state.ets_leader_pair, 0) do
     if state.decided == false do
       GenServer.call(state.pl_memory_pid, {:update_decided_flag, true})
       # trigger <uc, Decide | v>

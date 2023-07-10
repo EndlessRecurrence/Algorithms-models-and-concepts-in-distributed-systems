@@ -1,6 +1,7 @@
 defmodule DistributedAlgorithmsApp.EpochConsensus do
   alias DistributedAlgorithmsApp.PerfectLinkLayer
   alias DistributedAlgorithmsApp.BestEffortBroadcastLayer
+  alias DistributedAlgorithmsApp.UniformConsensus
 
   ### only the leader
   def send_proposal_event(message, state) do
@@ -136,11 +137,21 @@ defmodule DistributedAlgorithmsApp.EpochConsensus do
   end
 
   def deliver_ep_internal_decided_message(message, state) do
-    # trigger <ep, Decide | v>
+    ep_decide_message = %Proto.Message {
+      FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+      ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+      type: :EP_DECIDE,
+      epDecide: %Proto.EpDecide {
+        ets: elem(state.ets_leader_pair, 0),
+        value: %Proto.Value{decided: true, v: message.bebDeliver.message.value.v}
+      }
+    }
+
+    UniformConsensus.deliver_ep_decide_event(ep_decide_message, state)
   end
 
   def receive_ep_abort_message(message, state) do
-    # trigger <ep, Aborted | (valts, val)>
+    UniformConsensus.deliver_ep_aborted_event(state.valts_val_pair, state)
     # halt;
   end
 
