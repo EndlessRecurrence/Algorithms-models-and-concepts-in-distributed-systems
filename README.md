@@ -270,6 +270,22 @@ Read operation flow:
 5. The processes deliver the written value, saving it and then sending back an acknowledgment to the "leader process"
 6. The leader delivers the acknowledgments and sends a READRETURN with the read value to the hub.
 
+### Eventually perfect failure detector
+
+![Eventually perfect failure detector](Images/epfd_diagram.png)
+
+### Leader detection
+
+![Leader detection](Images/leader_detection_diagram.png)
+
+### Epoch change
+
+![Epoch change](Images/epoch_change_diagram.png)
+
+### Uniform consensus in fail-noisy mode
+
+![Uniform consensus in fail-noisy mode](Images/epoch_consensus_uniform_consensus_diagram.png)
+
 ### [Fault-tolerance](https://en.wikipedia.org/wiki/Fault_tolerance)
 
 - the property that enables a system to continue operating properly in the event of the failure of one or more faults within some of its components. If its operating quality decreases at all, the decrease is proportional to the severity of the failure, as compared to a naively designed system, in which even a small failure can cause total breakdown. Fault tolerance is particularly sought after in high-availability, mission-critical, or even life-critical systems. The ability of maintaining functionality when portions of a system break down is referred to as graceful degradation.
