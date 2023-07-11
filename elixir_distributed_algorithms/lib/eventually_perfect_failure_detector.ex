@@ -61,7 +61,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
     {:noreply, new_state}
   end
 
-  @impl
+  @impl true
   def handle_info({:EPFD_INTERNAL_HEARTBEAT_REQUEST, message, pl_state}, current_state) do
     IO.inspect message, label: "Request heartbeat message caught in generic handler @ EFPD", limit: :infinity
 
@@ -85,7 +85,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
     {:noreply, new_state}
   end
 
-  @impl
+  @impl true
   def handle_info({:EPFD_INTERNAL_HEARTBEAT_REPLY, message, pl_state}, current_state) do
     IO.inspect message, label: "Reply heartbeat message caught in generic handler @ EFPD", limit: :infinity
     updated_alive_list = [message.plDeliver.sender | Map.get(current_state, :alive)] |> Enum.uniq()

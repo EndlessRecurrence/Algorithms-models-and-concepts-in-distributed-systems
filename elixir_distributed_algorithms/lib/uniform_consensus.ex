@@ -8,7 +8,7 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
   def receive_ec_startepoch_event(message, state) do
     newts_newl_pair = GenServer.call(state.pl_memory_pid, {:update_newts_newl_pair, {message.ecStartEpoch.newTimestamp, message.ecStartEpoch.newLeader}})
     new_state = state
-      |> Map.put(newts_newl_pair: newts_newl_pair)
+      |> Map.put(:newts_newl_pair, newts_newl_pair)
 
     ep_abort_message = %Proto.Message {
       FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
@@ -25,7 +25,7 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
       if state.ts == elem(state.ets_leader_pair, 0) do
         GenServer.call(state.pl_memory_pid, {:update_ets_leader_pair, state.newts_newl_pair})
         GenServer.call(state.pl_memory_pid, {:update_proposed_flag, false})
-        state |> Map.put(proposed: false)
+        state |> Map.put(:proposed, false)
         # Initialize a new instance ep.ets of epoch consensus with timestamp ets,
         # leader l, and state state;
       else

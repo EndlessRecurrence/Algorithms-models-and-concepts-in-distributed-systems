@@ -126,7 +126,7 @@ defmodule DistributedAlgorithmsApp.EpochConsensus do
             ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
             type: :EP_INTERNAL_DECIDED,
             epInternalDecided: %Proto.EpInternalDecided {
-              value: %Proto.Value{decided: true, v: state.tmpval}
+              value: %Proto.Value{defined: true, v: state.tmpval}
             }
           }
         }
@@ -143,7 +143,7 @@ defmodule DistributedAlgorithmsApp.EpochConsensus do
       type: :EP_DECIDE,
       epDecide: %Proto.EpDecide {
         ets: elem(state.ets_leader_pair, 0),
-        value: %Proto.Value{decided: true, v: message.bebDeliver.message.value.v}
+        value: %Proto.Value{defined: true, v: message.bebDeliver.message.value.v}
       }
     }
 

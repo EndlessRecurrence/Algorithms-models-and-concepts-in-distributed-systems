@@ -1,5 +1,6 @@
 defmodule DistributedAlgorithmsApp.EventualLeaderDetector do
   alias DistributedAlgorithmsApp.EventuallyPerfectFailureDetector
+  alias DistributedAlgorithmsApp.EpochChange
   alias DistributedAlgorithmsApp.ProcessMemory
 
   def receive_epfd_suspect_event(process_struct, state) do

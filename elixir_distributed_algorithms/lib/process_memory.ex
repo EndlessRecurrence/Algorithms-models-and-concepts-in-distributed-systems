@@ -65,11 +65,11 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       |> Map.put(:tmpval, nil)
       |> Map.put(:states, List.duplicate(nil, length(process_id_structs)))
       |> Map.put(:accepted, 0)
-      |> Map.put(val: nil)
-      |> Map.put(proposed: false)
-      |> Map.put(decided: false)
-      |> Map.put(ets_leader_pair: {0, nil})
-      |> Map.put(newts_newl_pair: {0, nil})
+      |> Map.put(:val, nil)
+      |> Map.put(:proposed, false)
+      |> Map.put(:decided, false)
+      |> Map.put(:ets_leader_pair, {0, nil})
+      |> Map.put(:newts_newl_pair, {0, nil})
 
     {:reply, {process_id_structs, process_id_struct}, new_state}
   end
