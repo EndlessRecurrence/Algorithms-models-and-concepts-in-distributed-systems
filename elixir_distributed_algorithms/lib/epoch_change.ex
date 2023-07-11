@@ -30,7 +30,9 @@ defmodule DistributedAlgorithmsApp.EpochChange do
     newts = message.bebDeliver.message.ecInternalNewEpoch.timestamp
     if message.bebDeliver.sender == state.trusted and newts > state.lastts do
       new_lastts = GenServer.call(state.pl_memory_pid, {:update_lastts, state.lastts + newts})
-      # trigger <ec, StartEpoch | newts, l> event
+      new_state = state
+        |> Map.put(:lastts, new_lastts)
+
       start_epoch_message = %Proto.Message {
         ToAbstractionId: "app.pl",
         FromAbstractionId: "app.pl",
@@ -41,7 +43,7 @@ defmodule DistributedAlgorithmsApp.EpochChange do
         }
       }
 
-      UniformConsensus.receive_ec_startepoch_event(start_epoch_message, state)
+      UniformConsensus.receive_ec_startepoch_event(start_epoch_message, new_state)
     else
       nack_message = %Proto.Message {
         ToAbstractionId: "app.pl",
@@ -62,7 +64,7 @@ defmodule DistributedAlgorithmsApp.EpochChange do
     end
   end
 
-  def deliver_pl_nack_event(message, state) do
+  def deliver_pl_nack_event(_message, state) do
     if state.trusted == state.process_id_struct do
       new_ts = GenServer.call(state.pl_memory_pid, {:update_ts, state.ts + length(state.process_id_structs)})
 

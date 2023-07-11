@@ -18,6 +18,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       :PROC_DESTROY_SYSTEM -> Logger.info("APP_LAYER: Hub destroyed process system.")
       :PROC_INITIALIZE_SYSTEM -> initialize_system(message, state)
       :APP_BROADCAST -> send_broadcast_message(message, state)
+      :APP_PROPOSE -> deliver_app_propose_message(message, state)
       type when type in [:APP_WRITE, :APP_READ] -> send_nnar_broadcast_read(message, state)
     end
   end
@@ -30,6 +31,14 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       :NNAR_INTERNAL_ACK -> receive_nnar_internal_ack_message(message, state)
       :NNAR_INTERNAL_VALUE -> receive_nnar_internal_value_message(message, state)
     end
+  end
+
+  defp deliver_app_propose_message(message, state) do
+    value = message.plDeliver.message.appPropose.value.v
+    topic = message.plDeliver.message.appPropose.topic
+    Logger.info("APP_LAYER: Received the :APP_PROPOSE message with value #{value} and topic #{topic}")
+
+    GenServer.call(state.pl_memory_pid, :initialize_epfd_layer)
   end
 
   ## CHECKED !!!

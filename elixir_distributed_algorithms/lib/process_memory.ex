@@ -15,21 +15,31 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
   ## CHECKED !!!
   @impl true
   def handle_call({:save_process_id_structs, process_id_structs, process_id_struct, system_id}, _from, state) do
-    # Logger.info("PROCESS_MEMORY: SAVE_PROCESS_ID_STRUCTS")
+    new_state = state
+      |> Map.put(:process_id_struct, process_id_struct)
+      |> Map.put(:process_id_structs, process_id_structs)
+      |> Map.put(:system_id, system_id)
+
+    {:reply, {process_id_structs, process_id_struct}, new_state}
+  end
+
+  @impl true
+  def handle_call(:initialize_epfd_layer, _from, state) do
+    Logger.info("PROCESS_MEMORY: SAVE_PROCESS_ID_STRUCTS")
     epfd_state = Map.merge(state, %{
       ### eventually perfect failure detector variables
-      alive: process_id_structs,
+      alive: state.process_id_structs,
       suspected: [],
       delay: 100, # 100 milliseconds, 0.1 seconds
       ### epoch change variables
       leader: nil,
-      trusted: Enum.min_by(process_id_structs, fn x -> x.rank end),
+      trusted: Enum.min_by(state.process_id_structs, fn x -> x.rank end),
       lastts: 0,
-      ts: process_id_struct.rank,
+      ts: state.process_id_struct.rank,
       ### epoch consensus variables
       valts_val_pair: {0, %Proto.Value{defined: false, v: nil}},
       tmpval: %Proto.Value{defined: false, v: nil},
-      states: List.duplicate(nil, length(process_id_structs)),
+      states: List.duplicate(nil, length(state.process_id_structs)),
       accepted: 0,
       ### uniform consensus variables
       val: nil,
@@ -39,10 +49,6 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       # Initialize a new instance ep.0 of epoch consensus with timestamp 0, leader l_0 , and state (0, ⊥);
       ets_leader_pair: {0, nil},
       newts_newl_pair: {0, nil},
-      ### process variables
-      process_id_structs: process_id_structs,
-      process_id_struct: process_id_struct,
-      system_id: system_id
     })
 
     epfd_id =
@@ -53,25 +59,9 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
         _ -> raise RuntimeError, message: "start_link ignored, EPFD failed to start."
       end
 
-    new_state = state
-      |> Map.put(:process_id_struct, process_id_struct)
-      |> Map.put(:process_id_structs, process_id_structs)
-      |> Map.put(:epfd_id, epfd_id)
-      |> Map.put(:system_id, system_id)
-      |> Map.put(:leader, nil)
-      |> Map.put(:trusted, Enum.min_by(process_id_structs, fn x -> x.rank end))
-      |> Map.put(:ts, process_id_struct.rank)
-      |> Map.put(:valts_val_pair, {0, %Proto.Value{defined: false, v: nil}})
-      |> Map.put(:tmpval, nil)
-      |> Map.put(:states, List.duplicate(nil, length(process_id_structs)))
-      |> Map.put(:accepted, 0)
-      |> Map.put(:val, nil)
-      |> Map.put(:proposed, false)
-      |> Map.put(:decided, false)
-      |> Map.put(:ets_leader_pair, {0, nil})
-      |> Map.put(:newts_newl_pair, {0, nil})
+    new_state = epfd_state |> Map.put(:epfd_id, epfd_id)
 
-    {:reply, {process_id_structs, process_id_struct}, new_state}
+    {:reply, new_state, new_state}
   end
 
   @impl true
