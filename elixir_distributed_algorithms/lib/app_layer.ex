@@ -41,6 +41,27 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     GenServer.call(state.pl_memory_pid, :initialize_epfd_layer)
   end
 
+  def receive_uc_decide_event(message, state) do
+    app_decide_message = %Proto.Message {
+      ToAbstractionId: "app.pl",
+      FromAbstractionId: "app.pl",
+      type: :PL_SEND,
+      plSend: %Proto.PlSend {
+        destination: %Proto.ProcessId {host: state.hub_address, port: state.hub_port, owner: "hub", index: 0, rank: 0},
+        message: %Proto.Message {
+          ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+          FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+          type: :APP_DECIDE,
+          appDecide: %Proto.AppDecide {
+            value: message.ucDecide.value
+          }
+        }
+      }
+    }
+
+    PerfectLinkLayer.send_value_to_hub(app_decide_message, state)
+  end
+
   ## CHECKED !!!
   defp receive_nnar_internal_read_message(message, state) do
     keys = [:bebDeliver, :message, :nnarInternalRead, :readId]

@@ -1,5 +1,6 @@
 defmodule DistributedAlgorithmsApp.UniformConsensus do
   alias DistributedAlgorithmsApp.EpochConsensus
+  alias DistributedAlgorithmsApp.AppLayer
 
   def trigger_uc_propose_event(value, state) do
     GenServer.call(state.pl_memory_pid, {:update_val, value})
@@ -20,7 +21,7 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
     EpochConsensus.receive_ep_abort_message(ep_abort_message, new_state)
   end
 
-  def deliver_ep_aborted_event(message, state) do
+  def deliver_ep_aborted_event(_message, state) do
     new_state =
       if state.ts == elem(state.ets_leader_pair, 0) do
         GenServer.call(state.pl_memory_pid, {:update_ets_leader_pair, state.newts_newl_pair})
@@ -41,7 +42,15 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
   def deliver_ep_decide_event(message, state) when state.ts == elem(state.ets_leader_pair, 0) do
     if state.decided == false do
       GenServer.call(state.pl_memory_pid, {:update_decided_flag, true})
-      # trigger <uc, Decide | v>
+
+      uc_decide_message = %Proto.Message {
+        FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+        ToAbstractionId: "app", # be careful with the abstractions, the hub doesn't recognize this one...
+        type: :UC_DECIDE,
+        ucDecide: %Proto.UcDecide {value: message.epDecide.value}
+      }
+
+      AppLayer.receive_uc_decide_event(uc_decide_message, state)
     end
   end
 

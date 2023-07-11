@@ -131,10 +131,7 @@ defmodule DistributedAlgorithmsApp.NnAtomicRegisterLayer do
     response = %Proto.Message {
       type: :PL_SEND,
       plSend: %Proto.PlSend {
-        destination: %Proto.ProcessId {
-          host: state.hub_address,
-          port: state.hub_port
-        },
+        destination: %Proto.ProcessId {host: state.hub_address, port: state.hub_port, owner: "hub", index: 0, rank: 0},
         message: message
       }
     }
