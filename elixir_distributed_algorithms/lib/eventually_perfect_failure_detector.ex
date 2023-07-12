@@ -68,16 +68,15 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
             true -> suspected
           end
 
-        heartbeat_destination_abstraction_id = epfd_source_abstraction_id <> ".pl"
         heartbeat_request_message = %Proto.Message {
-          FromAbstractionId: "app.pl", # be careful with the abstractions
-          ToAbstractionId: "app.pl", # be careful with the abstractions
+          FromAbstractionId: epfd_source_abstraction_id <> ".pl", # be careful with the abstractions
+          ToAbstractionId: epfd_source_abstraction_id <> ".pl", # be careful with the abstractions
           type: :PL_SEND,
           plSend: %Proto.PlSend {
             destination: x,
             message: %Proto.Message {
               FromAbstractionId: epfd_source_abstraction_id, # be careful with the abstractions
-              ToAbstractionId: heartbeat_destination_abstraction_id, # be careful with the abstractions
+              ToAbstractionId: epfd_source_abstraction_id, # be careful with the abstractions
               type: :EPFD_INTERNAL_HEARTBEAT_REQUEST,
               epfdInternalHeartbeatRequest: %Proto.EpfdInternalHeartbeatRequest{}
             }
@@ -103,21 +102,19 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
     topic = message
       |> get_in(Enum.map([:plDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
-    topic_state = Map.get(state.consensus_dictionary, topic)
 
     IO.inspect message, label: "Request heartbeat message caught in generic handler @ EFPD", limit: :infinity
-    source_abstraction_id = "app.uc[" <> topic <> "].ec.eld.epfd"
-    destination_abstraction_id = "app.uc[" <> topic <> "].ec.eld.epfd.pl"
+    abstraction_id = "app.uc[" <> topic <> "].ec.eld.epfd"
 
     heartbeat_reply_message = %Proto.Message {
-      FromAbstractionId: "app.pl",
-      ToAbstractionId: "app.pl",
+      FromAbstractionId: abstraction_id <> ".pl", # be careful with the abstractions
+      ToAbstractionId: abstraction_id <> ".pl", # be careful with the abstractions
       type: :PL_SEND,
       plSend: %Proto.PlSend {
         destination: message.plDeliver.sender,
         message: %Proto.Message {
-          FromAbstractionId: source_abstraction_id, # be careful with the abstractions
-          ToAbstractionId: destination_abstraction_id, # be careful with the abstractions
+          FromAbstractionId: abstraction_id, # be careful with the abstractions
+          ToAbstractionId: abstraction_id, # be careful with the abstractions
           type: :EPFD_INTERNAL_HEARTBEAT_REPLY,
           epfdInternalHeartbeatReply: %Proto.EpfdInternalHeartbeatReply{}
         }

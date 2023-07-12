@@ -82,8 +82,10 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
 
   def deliver_message(message, state) do
     updated_message = %Proto.Message {
-      systemId: message.systemId,
+      FromAbstractionId: Map.get(message, :FromAbstractionId),
+      ToAbstractionId: Map.get(message, :ToAbstractionId),
       type: :PL_DELIVER,
+      systemId: message.systemId,
       plDeliver: %Proto.PlDeliver {sender: extract_sender_process_id(message, state), message: message.networkMessage.message}
     }
 
