@@ -19,14 +19,20 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       |> Map.put(:process_id_struct, process_id_struct)
       |> Map.put(:process_id_structs, process_id_structs)
       |> Map.put(:system_id, system_id)
+      |> Map.put(:consensus_dictionary, %{})
 
     {:reply, {process_id_structs, process_id_struct}, new_state}
   end
 
   @impl true
-  def handle_call(:initialize_epfd_layer, _from, state) do
+  def handle_call({:initialize_epfd_layer, topic_name}, _from, state) do
     Logger.info("PROCESS_MEMORY: SAVE_PROCESS_ID_STRUCTS")
-    epfd_state = Map.merge(state, %{
+
+    if Map.has_key?(state, :epfd_id) do
+      Process.exit(state.epfd_id, :kill)
+    end
+
+    epfd_state = Map.put(state, :consensus_dictionary, Map.put(state.consensus_dictionary, topic_name, %{
       ### eventually perfect failure detector variables
       alive: state.process_id_structs,
       suspected: [],
@@ -49,7 +55,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       # Initialize a new instance ep.0 of epoch consensus with timestamp 0, leader l_0 , and state (0, ⊥);
       ets_leader_pair: {0, nil},
       newts_newl_pair: {0, nil},
-    })
+    }))
 
     epfd_id =
       case EventuallyPerfectFailureDetector.start_link(epfd_state) do
@@ -65,71 +71,101 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
   end
 
   @impl true
-  def handle_call({:update_suspected_list, new_suspected}, _from, state) do
-    new_state = state |> Map.put(:suspected, new_suspected)
-    {:reply, new_state.suspected, new_state}
+  def handle_call({:update_suspected_list, new_suspected, topic}, _from, state) do
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:suspected, new_suspected)
+    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    {:reply, new_suspected, new_state}
   end
 
   @impl true
-  def handle_call({:update_leader, new_leader}, _from, state) do
-    new_state = state |> Map.put(:leader, new_leader)
-    {:reply, new_state.leader, new_state}
+  def handle_call({:update_leader, new_leader, topic}, _from, state) do
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:leader, new_leader)
+    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    {:reply, new_leader, new_state}
   end
 
   @impl true
-  def handle_call({:update_trusted, new_trusted}, _from, state) do
-    new_state = state |> Map.put(:trusted, new_trusted)
-    {:reply, new_state.trusted, new_state}
+  def handle_call({:update_trusted, new_trusted, topic}, _from, state) do
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:trusted, new_trusted)
+    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    {:reply, new_trusted, new_state}
   end
 
   @impl true
-  def handle_call({:update_ts, new_ts}, _from, state) do
-    new_state = state |> Map.put(:ts, new_ts)
-    {:reply, new_state.ts, new_state}
+  def handle_call({:update_ts, new_ts, topic}, _from, state) do
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:ts, new_ts)
+    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    {:reply, new_ts, new_state}
   end
 
   @impl true
-  def handle_call({:update_tmpval, proposed_value}, _from, state) do
-    new_state = state |> Map.put(:tmpval, proposed_value)
-    {:reply, new_state.tmpval, new_state}
+  def handle_call({:update_tmpval, proposed_value, topic}, _from, state) do
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:tmpval, proposed_value)
+    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    {:reply, proposed_value, new_state}
   end
 
   @impl true
-  def handle_call({:update_valts_val_pair, new_pair}, _from, state) do
-    new_state = state |> Map.put(:valts_val_pair, new_pair)
-    {:reply, new_state.valts_val_pair, new_state}
+  def handle_call({:update_val, value, topic}, _from, state) do
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:val, value)
+    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    {:reply, value, new_state}
   end
 
   @impl true
-  def handle_call({:update_states_pair, rank, new_pair}, _from, state) do
+  def handle_call({:update_valts_val_pair, new_pair, topic}, _from, state) do
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:valts_val_pair, new_pair)
+    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    {:reply, new_pair, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_states_pair, rank, new_pair, topic}, _from, state) do
     new_states_list = List.replace_at(state.states, rank, new_pair)
-    new_state = state |> Map.put(:states, new_states_list)
-    {:reply, new_state.states, new_state}
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:states, new_states_list)
+    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    {:reply, new_states_list, new_state}
   end
 
   @impl true
-  def handle_call({:update_accepted, new_accepted}, _from, state) do
-    new_state = state |> Map.put(:accepted, new_accepted)
-    {:reply, new_state.accepted, new_state}
+  def handle_call({:update_accepted, new_accepted, topic}, _from, state) do
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:accepted, new_accepted)
+    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    {:reply, new_accepted, new_state}
   end
 
   @impl true
-  def handle_call(:reset_states, _from, state) do
+  def handle_call({:reset_states, topic}, _from, state) do
     new_states = List.duplicate(nil, length(state.process_id_structs))
-    new_state = state |> Map.put(:states, new_states)
-    {:reply, [], new_states, new_state}
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:states, new_states)
+    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    {:reply, [], new_state}
   end
 
   @impl true
-  def handle_call({:update_newts_newl_pair, newts_newl_pair}, _from, state) do
-    new_state = state |> Map.put(:newts_newl_pair, newts_newl_pair)
-    {:reply, new_state.newts_newl_pair, new_state}
+  def handle_call({:update_newts_newl_pair, newts_newl_pair, topic}, _from, state) do
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:newts_newl_pair, newts_newl_pair)
+    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    {:reply, newts_newl_pair, new_state}
   end
 
   @impl true
-  def handle_call({:update_ets_leader_pair, new_ets_leader_pair}, _from, state) do
-    new_state = state |> Map.put(:ets_leader_pair, new_ets_leader_pair)
-    {:reply, new_state.ets_leader_pair, new_state}
+  def handle_call({:update_ets_leader_pair, new_ets_leader_pair, topic}, _from, state) do
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:ets_leader_pair, new_ets_leader_pair)
+    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    {:reply, new_ets_leader_pair, new_state}
   end
 
   ## CHECKED !!!

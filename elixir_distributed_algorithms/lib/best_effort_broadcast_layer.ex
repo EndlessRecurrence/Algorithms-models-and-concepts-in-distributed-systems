@@ -3,6 +3,7 @@ defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
   alias DistributedAlgorithmsApp.AppLayer
   alias DistributedAlgorithmsApp.NnAtomicRegisterLayer
   alias DistributedAlgorithmsApp.PerfectLinkLayer
+  alias DistributedAlgorithmsApp.EpochConsensus
   require Logger
 
   def receive_message(message, state) do
@@ -10,18 +11,22 @@ defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
   end
 
   defp deliver_message(message, state) do
-    update_message = %Proto.Message {
+    updated_message = %Proto.Message {
       type: :BEB_DELIVER,
       bebDeliver: %Proto.BebDeliver {sender: message.plDeliver.sender, message: message.plDeliver.message}
     }
 
     keys = [:plDeliver, :message, :ToAbstractionId]
     to_abstraction_id = get_in(message, Enum.map(keys, &Access.key!(&1)))
+    message_type = message.plDeliver.message.type
 
     cond do
-      to_abstraction_id == "app" -> AppLayer.receive_message(update_message, state)
-      Regex.match?(~r/app\.nnar\[[a-zA-Z]+[0-9]*\]/, to_abstraction_id) -> NnAtomicRegisterLayer.receive_message(update_message, state)
-      true -> AppLayer.receive_message(update_message, state)
+      to_abstraction_id == "app" -> AppLayer.receive_message(updated_message, state)
+      Regex.match?(~r/app\.nnar\[[a-zA-Z]+[0-9]*\]/, to_abstraction_id) -> NnAtomicRegisterLayer.receive_message(updated_message, state)
+      message_type == :EP_INTERNAL_READ -> EpochConsensus.deliver_ep_internal_read_message(updated_message, state)
+      message_type == :EP_INTERNAL_WRITE -> EpochConsensus.deliver_ep_internal_write_message(updated_message, state)
+      message_type == :EP_INTERNAL_DECIDED -> EpochConsensus.deliver_ep_internal_decided_message(updated_message, state)
+      true -> AppLayer.receive_message(updated_message, state)
     end
   end
 

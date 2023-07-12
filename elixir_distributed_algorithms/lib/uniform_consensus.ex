@@ -1,19 +1,36 @@
 defmodule DistributedAlgorithmsApp.UniformConsensus do
   alias DistributedAlgorithmsApp.EpochConsensus
   alias DistributedAlgorithmsApp.AppLayer
+  alias DistributedAlgorithmsApp.AbstractionIdUtils
 
-  def trigger_uc_propose_event(value, state) do
-    GenServer.call(state.pl_memory_pid, {:update_val, value})
+  # checked
+  def trigger_uc_propose_event(message, state) do
+    topic =
+      Map.get(message, :ToAbstractionId)
+      |> AbstractionIdUtils.extract_topic_name()
+    GenServer.call(state.pl_memory_pid, {:update_val, message.ucPropose.value, topic})
+    modified_topic_state = Map.get(state.consensus_dictionary, topic) |> Map.put(:val, message.ucPropose.value)
+    new_state = state |> Map.put(:consensus_dictionary, modified_topic_state)
+    send_proposal_event(new_state, topic)
   end
 
+  # checked
   def receive_ec_startepoch_event(message, state) do
-    newts_newl_pair = GenServer.call(state.pl_memory_pid, {:update_newts_newl_pair, {message.ecStartEpoch.newTimestamp, message.ecStartEpoch.newLeader}})
-    new_state = state
-      |> Map.put(:newts_newl_pair, newts_newl_pair)
+    topic =
+      Map.get(message, :ToAbstractionId)
+      |> AbstractionIdUtils.extract_topic_name()
+    newts_newl_pair = GenServer.call(state.pl_memory_pid, {:update_newts_newl_pair, {message.ecStartEpoch.newTimestamp, message.ecStartEpoch.newLeader}, topic})
+
+    modified_topic_state = Map.get(state.consensus_dictionary, topic) |> Map.put(:newts_newl_pair, newts_newl_pair)
+    new_state = state |> Map.put(:consensus_dictionary, modified_topic_state)
+    {epoch_consensus_timestamp, _leader} = modified_topic_state.ets_leader_pair
+
+    source_abstraction_id = "app.uc[" <> topic <> "]"
+    destination_abstraction_id = "app.uc[" <> topic <> "]" <> ".ep[" <> Integer.to_string(epoch_consensus_timestamp) <> "]"
 
     ep_abort_message = %Proto.Message {
-      FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
-      ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+      FromAbstractionId: source_abstraction_id, # be careful with the abstractions
+      ToAbstractionId: destination_abstraction_id, # be careful with the abstractions
       type: :EP_ABORT,
       epAbort: %Proto.EpAbort {}
     }
@@ -21,36 +38,82 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
     EpochConsensus.receive_ep_abort_message(ep_abort_message, new_state)
   end
 
-  def deliver_ep_aborted_event(_message, state) do
+  # checked
+  def deliver_ep_aborted_event(message, state) do
+    topic =
+      Map.get(message, :ToAbstractionId)
+      |> AbstractionIdUtils.extract_topic_name()
+    topic_state = Map.get(state.consensus_dictionary, topic)
+    {epoch_consensus_timestamp, _leader} = topic_state.ets_leader_pair
+
     new_state =
-      if state.ts == elem(state.ets_leader_pair, 0) do
-        GenServer.call(state.pl_memory_pid, {:update_ets_leader_pair, state.newts_newl_pair})
-        GenServer.call(state.pl_memory_pid, {:update_proposed_flag, false})
-        state |> Map.put(:proposed, false)
-        # Initialize a new instance ep.ets of epoch consensus with timestamp ets,
-        # leader l, and state state;
+      if topic_state.ts == epoch_consensus_timestamp do
+        GenServer.call(state.pl_memory_pid, {:update_ets_leader_pair, topic_state.newts_newl_pair, topic})
+        GenServer.call(state.pl_memory_pid, {:update_proposed_flag, false, topic})
+        modified_topic_state =
+          topic_state
+          |> Map.put(:ets_leader_pair, topic_state.newts_newl_pair)
+          |> Map.put(:proposed, false)
+
+        state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
       else
         state
       end
 
-    if new_state.leader == new_state.process_id_struct and new_state.val.v != nil and new_state.proposed == false do
-      GenServer.call(state.pl_memory_pid, {:update_proposed_flag, true})
-      # trigger <ep.ets, Propose | val>
+    send_proposal_event(new_state, topic)
+  end
+
+  # checked
+  defp send_proposal_event(state, topic) do
+    topic_state = Map.get(state.consensus_dictionary, topic)
+
+    # second condition might fail if the default null value is something other than nil...
+    if topic_state.leader == state.process_id_struct and topic_state.val.v != nil and topic_state.proposed == false do
+      GenServer.call(state.pl_memory_pid, {:update_proposed_flag, true, topic})
+      modified_topic_state = topic_state |> Map.put(:proposed, true)
+      new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
+
+      {epoch_consensus_timestamp, _leader} = modified_topic_state.ets_leader_pair
+      source_abstraction_id = "app.uc[" <> topic <> "]"
+      destination_abstraction_id = "app.uc[" <> topic <> "]" <> ".ep[" <> Integer.to_string(epoch_consensus_timestamp) <> "]"
+
+      ep_propose_event = %Proto.Message {
+        FromAbstractionId: source_abstraction_id, # be careful with the abstractions
+        ToAbstractionId: destination_abstraction_id, # be careful with the abstractions
+        type: :EP_PROPOSE,
+        epPropose: %Proto.EpPropose {value: topic_state.val}
+      }
+
+      EpochConsensus.send_proposal_event(ep_propose_event, new_state)
     end
   end
 
-  def deliver_ep_decide_event(message, state) when state.ts == elem(state.ets_leader_pair, 0) do
-    if state.decided == false do
-      GenServer.call(state.pl_memory_pid, {:update_decided_flag, true})
+  # checked
+  def deliver_ep_decide_event(message, state) do
+    topic =
+      Map.get(message, :FromAbstractionId)
+      |> AbstractionIdUtils.extract_topic_name()
+    topic_state = Map.get(state.consensus_dictionary, topic)
+    {ets, _leader} = topic_state.ets_leader_pair
 
-      uc_decide_message = %Proto.Message {
-        FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
-        ToAbstractionId: "app", # be careful with the abstractions, the hub doesn't recognize this one...
-        type: :UC_DECIDE,
-        ucDecide: %Proto.UcDecide {value: message.epDecide.value}
-      }
+    if topic_state.ts == ets do
+      if topic_state.decided == false do
+        GenServer.call(state.pl_memory_pid, {:update_decided_flag, true, topic})
+        modified_topic_state = topic_state |> Map.put(:decided, true)
+        new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
 
-      AppLayer.receive_uc_decide_event(uc_decide_message, state)
+        source_abstraction_id = "app.uc[" <> topic <> "]"
+        destination_abstraction_id = "app"
+
+        uc_decide_message = %Proto.Message {
+          FromAbstractionId: source_abstraction_id, # be careful with the abstractions
+          ToAbstractionId: destination_abstraction_id, # be careful with the abstractions
+          type: :UC_DECIDE,
+          ucDecide: %Proto.UcDecide {value: message.epDecide.value}
+        }
+
+        AppLayer.receive_uc_decide_event(uc_decide_message, new_state)
+      end
     end
   end
 

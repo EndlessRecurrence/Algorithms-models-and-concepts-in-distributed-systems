@@ -4,6 +4,8 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   alias DistributedAlgorithmsApp.BestEffortBroadcastLayer
   alias DistributedAlgorithmsApp.PerfectLinkLayer
   alias DistributedAlgorithmsApp.TimestampRankPair
+  alias DistributedAlgorithmsApp.UniformConsensus
+  alias DistributedAlgorithmsApp.AbstractionIdUtils
   require Logger
 
   def receive_message(message, state) do
@@ -38,19 +40,37 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     topic = message.plDeliver.message.appPropose.topic
     Logger.info("APP_LAYER: Received the :APP_PROPOSE message with value #{value} and topic #{topic}")
 
-    GenServer.call(state.pl_memory_pid, :initialize_epfd_layer)
+    new_state = GenServer.call(state.pl_memory_pid, {:initialize_epfd_layer, topic})
+    abstraction_id = "app.uc[" <> topic <> "]"
+
+    uc_propose_event = %Proto.Message {
+      FromAbstractionId: "app", # be careful with the abstractions
+      ToAbstractionId: abstraction_id, # be careful with the abstractions
+      type: :UC_PROPOSE,
+      ucPropose: %Proto.UcPropose {
+        value: message.plDeliver.message.appPropose.value
+      }
+    }
+
+    UniformConsensus.trigger_uc_propose_event(uc_propose_event, new_state)
   end
 
   def receive_uc_decide_event(message, state) do
+    topic =
+      Map.get(message, :FromAbstractionId)
+      |> AbstractionIdUtils.extract_topic_name()
+    source_abstraction_id = "app.uc[" <> topic <> "]"
+    destination_abstraction_id = "app.uc[" <> topic <> "]"
+
     app_decide_message = %Proto.Message {
-      ToAbstractionId: "app.pl",
       FromAbstractionId: "app.pl",
+      ToAbstractionId: "app.pl",
       type: :PL_SEND,
       plSend: %Proto.PlSend {
         destination: %Proto.ProcessId {host: state.hub_address, port: state.hub_port, owner: "hub", index: 0, rank: 0},
         message: %Proto.Message {
-          ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
-          FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+          FromAbstractionId: source_abstraction_id, # be careful with the abstractions
+          ToAbstractionId: destination_abstraction_id, # be careful with the abstractions
           type: :APP_DECIDE,
           appDecide: %Proto.AppDecide {
             value: message.ucDecide.value
@@ -230,9 +250,6 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       get_in(message, Enum.map(keys, &Access.key!(&1)))
       |> then(fn abstraction -> Regex.named_captures(~r/\[(?<register_name>.*)\]/, abstraction) end)
       |> Map.get("register_name")
-
-    # abstraction_id = "app.nnar[" <> register_name <> "].pl"
-    # cut_abstraction_name = fn x -> String.split(x, ".") |> Enum.drop(-1) |> Enum.join(".") end
 
     if nnar_value.readId == Map.get(state.registers, register_name).request_id do
       new_read_list_entry = TimestampRankPair.new(nnar_value.timestamp, nnar_value.writerRank, nnar_value.value)
