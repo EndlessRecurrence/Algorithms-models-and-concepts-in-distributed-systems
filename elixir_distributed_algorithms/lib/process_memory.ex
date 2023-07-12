@@ -20,6 +20,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       |> Map.put(:process_id_structs, process_id_structs)
       |> Map.put(:system_id, system_id)
       |> Map.put(:consensus_dictionary, %{})
+      |> Map.put(:pl_memory_pid, self())
 
     {:reply, {process_id_structs, process_id_struct}, new_state}
   end
@@ -32,14 +33,17 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       Process.exit(state.epfd_id, :kill)
     end
 
+    leader = Enum.min_by(state.process_id_structs, fn x -> x.rank end)
+
     epfd_state = Map.put(state, :consensus_dictionary, Map.put(state.consensus_dictionary, topic_name, %{
       ### eventually perfect failure detector variables
       alive: state.process_id_structs,
       suspected: [],
+      initial_delay: 100, # 100 milliseconds, 0.1 seconds
       delay: 100, # 100 milliseconds, 0.1 seconds
       ### epoch change variables
-      leader: nil,
-      trusted: Enum.min_by(state.process_id_structs, fn x -> x.rank end),
+      leader: leader,
+      trusted: leader,
       lastts: 0,
       ts: state.process_id_struct.rank,
       ### epoch consensus variables
@@ -53,19 +57,20 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       decided: false,
       # Obtain the leader l_0 of the initial epoch with timestamp 0 from epoch-change inst. ec;
       # Initialize a new instance ep.0 of epoch consensus with timestamp 0, leader l_0 , and state (0, ⊥);
-      ets_leader_pair: {0, nil},
-      newts_newl_pair: {0, nil},
+      ets_leader_pair: {0, leader},
+      newts_newl_pair: {0, leader},
     }))
 
     epfd_id =
-      case EventuallyPerfectFailureDetector.start_link(epfd_state) do
+      case EventuallyPerfectFailureDetector.start_link({epfd_state, topic_name}) do
         {:ok, pid} -> pid
         {:error, {:already_started, pid}} -> "EPFD #{pid} already started."
         {:error, reason} -> raise RuntimeError, message: reason
         _ -> raise RuntimeError, message: "start_link ignored, EPFD failed to start."
       end
 
-    new_state = epfd_state |> Map.put(:epfd_id, epfd_id)
+    new_state = epfd_state
+      |> Map.put(:epfd_id, epfd_id)
 
     {:reply, new_state, new_state}
   end

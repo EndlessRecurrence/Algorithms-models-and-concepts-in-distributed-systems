@@ -5,6 +5,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
   alias DistributedAlgorithmsApp.AppLayer
   alias DistributedAlgorithmsApp.BestEffortBroadcastLayer
   alias DistributedAlgorithmsApp.EpochConsensus
+  alias DistributedAlgorithmsApp.EpochChange
 
   def accept(port, process_index, nickname, hub_address, hub_port) do
     {:ok, socket} = :gen_tcp.listen(port, [:binary, packet: 0, active: false, reuseaddr: true])
@@ -102,6 +103,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
       message_type == :EPFD_INTERNAL_HEARTBEAT_REPLY -> send(state.epfd_id, {message_type, updated_message, state})
       message_type == :EP_INTERNAL_STATE -> EpochConsensus.deliver_ep_internal_state_message(message, state)
       message_type == :EP_INTERNAL_ACCEPT -> EpochConsensus.deliver_ep_internal_accept_message(message, state)
+      message_type == :EC_INTERNAL_NACK -> EpochChange.deliver_ec_internal_nack_message(message, state)
       String.contains?(to_abstraction_id, "beb") -> BestEffortBroadcastLayer.receive_message(updated_message, state)
       Regex.run(~r/nnar/, to_abstraction_id) != nil -> BestEffortBroadcastLayer.receive_message(updated_message, state)
       Regex.run(~r/nnar/, deep_to_abstraction_id) != nil -> BestEffortBroadcastLayer.receive_message(updated_message, state)

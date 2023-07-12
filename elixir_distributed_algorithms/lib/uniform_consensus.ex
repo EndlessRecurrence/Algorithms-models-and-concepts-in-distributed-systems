@@ -10,7 +10,8 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
       |> AbstractionIdUtils.extract_topic_name()
     GenServer.call(state.pl_memory_pid, {:update_val, message.ucPropose.value, topic})
     modified_topic_state = Map.get(state.consensus_dictionary, topic) |> Map.put(:val, message.ucPropose.value)
-    new_state = state |> Map.put(:consensus_dictionary, modified_topic_state)
+    modified_consensus_dictionary = Map.get(state, :consensus_dictionary) |> Map.put(topic, modified_topic_state)
+    new_state = state |> Map.put(:consensus_dictionary, modified_consensus_dictionary)
     send_proposal_event(new_state, topic)
   end
 
@@ -65,10 +66,13 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
 
   # checked
   defp send_proposal_event(state, topic) do
-    topic_state = Map.get(state.consensus_dictionary, topic)
+    topic_state =
+      Map.get(state, :consensus_dictionary)
+      |> Map.get(topic)
+    leader = Map.get(topic_state, :leader) |> then(fn x -> if x == nil, do: nil, else: x end)
 
     # second condition might fail if the default null value is something other than nil...
-    if topic_state.leader == state.process_id_struct and topic_state.val.v != nil and topic_state.proposed == false do
+    if leader == state.process_id_struct and topic_state.val.v != nil and topic_state.proposed == false do
       GenServer.call(state.pl_memory_pid, {:update_proposed_flag, true, topic})
       modified_topic_state = topic_state |> Map.put(:proposed, true)
       new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))

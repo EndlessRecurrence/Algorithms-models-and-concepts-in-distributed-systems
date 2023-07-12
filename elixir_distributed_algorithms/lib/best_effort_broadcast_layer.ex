@@ -4,6 +4,7 @@ defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
   alias DistributedAlgorithmsApp.NnAtomicRegisterLayer
   alias DistributedAlgorithmsApp.PerfectLinkLayer
   alias DistributedAlgorithmsApp.EpochConsensus
+  alias DistributedAlgorithmsApp.EpochChange
   require Logger
 
   def receive_message(message, state) do
@@ -26,6 +27,7 @@ defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
       message_type == :EP_INTERNAL_READ -> EpochConsensus.deliver_ep_internal_read_message(updated_message, state)
       message_type == :EP_INTERNAL_WRITE -> EpochConsensus.deliver_ep_internal_write_message(updated_message, state)
       message_type == :EP_INTERNAL_DECIDED -> EpochConsensus.deliver_ep_internal_decided_message(updated_message, state)
+      message_type == :EC_INTERNAL_NEW_EPOCH-> EpochChange.deliver_ep_internal_newepoch_message(updated_message, state)
       true -> AppLayer.receive_message(updated_message, state)
     end
   end

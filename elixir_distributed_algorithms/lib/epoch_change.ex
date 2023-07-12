@@ -2,40 +2,68 @@ defmodule DistributedAlgorithmsApp.EpochChange do
   alias DistributedAlgorithmsApp.PerfectLinkLayer
   alias DistributedAlgorithmsApp.BestEffortBroadcastLayer
   alias DistributedAlgorithmsApp.UniformConsensus
+  alias DistributedAlgorithmsApp.AbstractionIdUtils
 
-  def receive_trust_event(leader, state) do
-    GenServer.call(state.pl_memory_pid, {:update_trusted, leader})
+  # checked
+  def receive_trust_event(message, state) do
+    topic = message
+      |> get_in(Enum.map([:ToAbstractionId], &Access.key!(&1)))
+      |> AbstractionIdUtils.extract_topic_name()
+
+    topic_state = Map.get(state.consensus_dictionary, topic)
+    leader = GenServer.call(state.pl_memory_pid, {:update_trusted, message.eldTrust.process})
+
     if leader == state.process_id_struct do
       new_ts = GenServer.call(state.pl_memory_pid, {:update_ts, state.ts + length(state.process_id_structs)})
+      modified_topic_state = topic_state
+        |> Map.put(:trusted, leader)
+        |> Map.put(:ts, new_ts)
+      new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
+
+      source_abstraction_id = "app.uc[" <> topic <> "].ec"
+      destination_abstraction_id = "app.uc[" <> topic <> "].ec.beb"
 
       newepoch_message = %Proto.Message {
-        ToAbstractionId: "app.pl",
         FromAbstractionId: "app.pl",
+        ToAbstractionId: "app.pl",
         type: :BEB_BROADCAST,
         bebBroadcast: %Proto.BebBroadcast {
           message: %Proto.Message {
-            ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
-            FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+            FromAbstractionId: source_abstraction_id, # be careful with the abstractions
+            ToAbstractionId: destination_abstraction_id, # be careful with the abstractions
             type: :EC_INTERNAL_NEW_EPOCH,
             ecInternalNewEpoch: %Proto.EcInternalNewEpoch {timestamp: new_ts}
           }
         }
       }
 
-      Enum.each(state.process_id_structs, fn x -> BestEffortBroadcastLayer.send_broadcast_message(newepoch_message, x, state) end)
+      Enum.each(state.process_id_structs, fn x -> BestEffortBroadcastLayer.send_broadcast_message(newepoch_message, x, new_state) end)
     end
   end
 
-  def deliver_broadcasted_newepoch_event(message, state) do
-    newts = message.bebDeliver.message.ecInternalNewEpoch.timestamp
-    if message.bebDeliver.sender == state.trusted and newts > state.lastts do
-      new_lastts = GenServer.call(state.pl_memory_pid, {:update_lastts, state.lastts + newts})
-      new_state = state
+  # checked
+  def deliver_ep_internal_newepoch_message(message, state) do
+    topic = message
+      |> get_in(Enum.map([:bebDeliver, :message, :ToAbstractionId], &Access.key!(&1)))
+      |> AbstractionIdUtils.extract_topic_name()
+    topic_state = Map.get(state.consensus_dictionary, topic)
+
+    newts = message
+      |> get_in(Enum.map([:bebDeliver, :message, :ecInternalNewEpoch, :timestamp], &Access.key!(&1)))
+
+    if message.bebDeliver.sender == topic_state.trusted and newts > topic_state.lastts do
+      new_lastts = GenServer.call(state.pl_memory_pid, {:update_lastts, topic_state.lastts + newts})
+
+      modified_topic_state = topic_state
         |> Map.put(:lastts, new_lastts)
+      new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
+
+      source_abstraction_id = "app.uc[" <> topic <> "].ec"
+      destination_abstraction_id = "app.uc[" <> topic <> "]"
 
       start_epoch_message = %Proto.Message {
-        ToAbstractionId: "app.pl",
-        FromAbstractionId: "app.pl",
+        FromAbstractionId: source_abstraction_id, # be careful with the abstractions
+        ToAbstractionId: destination_abstraction_id, # be careful with the abstractions
         type: :EC_START_EPOCH,
         ecStartEpoch: %Proto.EcStartEpoch {
           newTimestamp: newts,
@@ -45,15 +73,18 @@ defmodule DistributedAlgorithmsApp.EpochChange do
 
       UniformConsensus.receive_ec_startepoch_event(start_epoch_message, new_state)
     else
+      source_abstraction_id = "app.uc[" <> topic <> "].ec"
+      destination_abstraction_id = "app.uc[" <> topic <> "].ec.pl"
+
       nack_message = %Proto.Message {
-        ToAbstractionId: "app.pl",
         FromAbstractionId: "app.pl",
+        ToAbstractionId: "app.pl",
         type: :PL_SEND,
         plSend: %Proto.PlSend {
           destination: message.bebDeliver.sender,
           message: %Proto.Message {
-            ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
-            FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+            FromAbstractionId: source_abstraction_id, # be careful with the abstractions
+            ToAbstractionId: destination_abstraction_id, # be careful with the abstractions
             type: :EC_INTERNAL_NACK,
             ecInternalNack: %Proto.EcInternalNack {}
           }
@@ -64,25 +95,38 @@ defmodule DistributedAlgorithmsApp.EpochChange do
     end
   end
 
-  def deliver_pl_nack_event(_message, state) do
-    if state.trusted == state.process_id_struct do
-      new_ts = GenServer.call(state.pl_memory_pid, {:update_ts, state.ts + length(state.process_id_structs)})
+  # checked
+  def deliver_ec_internal_nack_message(message, state) do
+    topic = message
+      |> get_in(Enum.map([:plDeliver, :message, :ToAbstractionId], &Access.key!(&1)))
+      |> AbstractionIdUtils.extract_topic_name()
+    topic_state = Map.get(state.consensus_dictionary, topic)
+
+    if topic_state.trusted == state.process_id_struct do
+      new_ts = GenServer.call(state.pl_memory_pid, {:update_ts, topic_state.ts + length(state.process_id_structs)})
+
+      modified_topic_state = topic_state
+        |> Map.put(:ts, new_ts)
+      new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
+
+      source_abstraction_id = "app.uc[" <> topic <> "].ec"
+      destination_abstraction_id = "app.uc[" <> topic <> "].ec.beb"
 
       newepoch_message = %Proto.Message {
-        ToAbstractionId: "app.pl",
         FromAbstractionId: "app.pl",
+        ToAbstractionId: "app.pl",
         type: :BEB_BROADCAST,
         bebBroadcast: %Proto.BebBroadcast {
           message: %Proto.Message {
-            ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
-            FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+            FromAbstractionId: source_abstraction_id, # be careful with the abstractions, the hub doesn't recognize this one...
+            ToAbstractionId: destination_abstraction_id, # be careful with the abstractions, the hub doesn't recognize this one...
             type: :EC_INTERNAL_NEW_EPOCH,
             ecInternalNewEpoch: %Proto.EcInternalNewEpoch {timestamp: new_ts}
           }
         }
       }
 
-      Enum.each(state.process_id_structs, fn x -> BestEffortBroadcastLayer.send_broadcast_message(newepoch_message, x, state) end)
+      Enum.each(state.process_id_structs, fn x -> BestEffortBroadcastLayer.send_broadcast_message(newepoch_message, x, new_state) end)
     end
   end
 end

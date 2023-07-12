@@ -2,46 +2,82 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
   use GenServer
   alias DistributedAlgorithmsApp.PerfectLinkLayer
   alias DistributedAlgorithmsApp.EventualLeaderDetector
+  alias DistributedAlgorithmsApp.AbstractionIdUtils
   require Logger
 
   def start_link(args) do
     GenServer.start_link(__MODULE__, args)
   end
 
+  # checked
   @impl true
-  def init(initial_state) do
+  def init({initial_state, topic}) do
     IO.inspect initial_state, label: "EPFD initial state"
-    Process.send_after(self(), :timeout, initial_state.delay)
-    {:ok, Map.put(initial_state, :initial_delay, initial_state.delay)}
+    delay = Map.get(initial_state.consensus_dictionary, topic)
+      |> Map.get(:delay)
+
+    Process.send_after(self(), :timeout, delay)
+
+    state = initial_state
+      |> Map.put(:topic, topic)
+
+    {:ok, state}
   end
 
+  # checked
   @impl true
   def handle_info(:timeout, state) do
     IO.puts("EPFD #{:erlang.pid_to_list(self())} timed out.")
-    new_delay = if state.alive != [] and state.suspected != [], do: state.delay + state.initial_delay, else: state.delay
+    topic = state.topic
+    topic_state = Map.get(state.consensus_dictionary, topic)
+    new_delay = if topic_state.alive != [] and topic_state.suspected != [], do: topic_state.delay + topic_state.initial_delay, else: topic_state.delay
 
     updated_suspected =
-      Enum.reduce(state.process_id_structs, state.suspected, fn x, suspected ->
+      Enum.reduce(state.process_id_structs, topic_state.suspected, fn x, suspected ->
+        epfd_source_abstraction_id = "app.uc[" <> topic <> "].ec.eld.epfd"
+        epfd_destination_abstraction_id = "app.uc[" <> topic <> "].ec.eld"
+
         new_suspected =
           cond do
-            Enum.member?(state.alive, x) == false and Enum.member?(suspected, x) == false ->
-              EventualLeaderDetector.receive_epfd_suspect_event(x, Map.put(state, :suspected, Enum.uniq([x | suspected])))
+            Enum.member?(topic_state.alive, x) == false and Enum.member?(suspected, x) == false ->
+              modified_topic_state = Map.put(topic_state, :suspected, Enum.uniq([x | suspected]))
+              state_parameter = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
+
+              epfd_suspect_message = %Proto.Message {
+                FromAbstractionId: epfd_source_abstraction_id, # be careful with the abstractions
+                ToAbstractionId: epfd_destination_abstraction_id, # be careful with the abstractions
+                type: :EPFD_SUSPECT,
+                epfdSuspect: %Proto.EpfdSuspect {process: x}
+              }
+
+              EventualLeaderDetector.receive_epfd_suspect_event(epfd_suspect_message, state_parameter)
               Enum.uniq([x | suspected])
-            Enum.member?(state.alive, x) and Enum.member?(suspected, x) ->
-              EventualLeaderDetector.receive_epfd_restore_event(x, Map.put(state, :suspected, Enum.filter(suspected, fn y -> y != x end)))
+            Enum.member?(topic_state.alive, x) and Enum.member?(suspected, x) ->
+              modified_topic_state = Map.put(topic_state, :suspected, Enum.filter(suspected, fn y -> y != x end))
+              state_parameter = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
+
+              epfd_restore_message = %Proto.Message {
+                FromAbstractionId: epfd_source_abstraction_id, # be careful with the abstractions
+                ToAbstractionId: epfd_destination_abstraction_id, # be careful with the abstractions
+                type: :EPFD_RESTORE,
+                epfdRestore: %Proto.EpfdRestore {process: x}
+              }
+
+              EventualLeaderDetector.receive_epfd_restore_event(epfd_restore_message, state_parameter)
               Enum.filter(suspected, fn y -> y != x end)
             true -> suspected
           end
 
+        heartbeat_destination_abstraction_id = epfd_source_abstraction_id <> ".pl"
         heartbeat_request_message = %Proto.Message {
-          ToAbstractionId: "app.pl",
-          FromAbstractionId: "app.pl",
+          FromAbstractionId: "app.pl", # be careful with the abstractions
+          ToAbstractionId: "app.pl", # be careful with the abstractions
           type: :PL_SEND,
           plSend: %Proto.PlSend {
             destination: x,
             message: %Proto.Message {
-              ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
-              FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+              FromAbstractionId: epfd_source_abstraction_id, # be careful with the abstractions
+              ToAbstractionId: heartbeat_destination_abstraction_id, # be careful with the abstractions
               type: :EPFD_INTERNAL_HEARTBEAT_REQUEST,
               epfdInternalHeartbeatRequest: %Proto.EpfdInternalHeartbeatRequest{}
             }
@@ -61,36 +97,53 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
     {:noreply, new_state}
   end
 
+  # checked
   @impl true
-  def handle_info({:EPFD_INTERNAL_HEARTBEAT_REQUEST, message, pl_state}, current_state) do
+  def handle_info({:EPFD_INTERNAL_HEARTBEAT_REQUEST, message, pl_state}, state) do
+    topic = message
+      |> get_in(Enum.map([:plDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
+      |> AbstractionIdUtils.extract_topic_name()
+    topic_state = Map.get(state.consensus_dictionary, topic)
+
     IO.inspect message, label: "Request heartbeat message caught in generic handler @ EFPD", limit: :infinity
+    source_abstraction_id = "app.uc[" <> topic <> "].ec.eld.epfd"
+    destination_abstraction_id = "app.uc[" <> topic <> "].ec.eld.epfd.pl"
 
     heartbeat_reply_message = %Proto.Message {
-      ToAbstractionId: "app.pl",
       FromAbstractionId: "app.pl",
+      ToAbstractionId: "app.pl",
       type: :PL_SEND,
       plSend: %Proto.PlSend {
         destination: message.plDeliver.sender,
         message: %Proto.Message {
-          ToAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
-          FromAbstractionId: "app.pl", # be careful with the abstractions, the hub doesn't recognize this one...
+          FromAbstractionId: source_abstraction_id, # be careful with the abstractions
+          ToAbstractionId: destination_abstraction_id, # be careful with the abstractions
           type: :EPFD_INTERNAL_HEARTBEAT_REPLY,
           epfdInternalHeartbeatReply: %Proto.EpfdInternalHeartbeatReply{}
         }
       }
     }
 
-    new_state = Map.merge(pl_state, current_state)
+    new_state = Map.merge(pl_state, state)
     PerfectLinkLayer.send_value_to_process(heartbeat_reply_message, new_state)
     {:noreply, new_state}
   end
 
+  # checked
   @impl true
-  def handle_info({:EPFD_INTERNAL_HEARTBEAT_REPLY, message, pl_state}, current_state) do
+  def handle_info({:EPFD_INTERNAL_HEARTBEAT_REPLY, message, pl_state}, state) do
+    topic = message
+      |> get_in(Enum.map([:plDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
+      |> AbstractionIdUtils.extract_topic_name()
+    topic_state = Map.get(state.consensus_dictionary, topic)
+
     IO.inspect message, label: "Reply heartbeat message caught in generic handler @ EFPD", limit: :infinity
-    updated_alive_list = [message.plDeliver.sender | Map.get(current_state, :alive)] |> Enum.uniq()
-    state_with_new_alive_list = Map.put(current_state, :alive, updated_alive_list)
-    new_state = Map.merge(pl_state, state_with_new_alive_list)
+    updated_alive_list = [message.plDeliver.sender | Map.get(topic_state, :alive)] |> Enum.uniq()
+
+    modified_topic_state = Map.put(topic_state, :alive, updated_alive_list)
+    state_with_updated_alive_list = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
+
+    new_state = Map.merge(pl_state, state_with_updated_alive_list)
     {:noreply, new_state}
   end
 
