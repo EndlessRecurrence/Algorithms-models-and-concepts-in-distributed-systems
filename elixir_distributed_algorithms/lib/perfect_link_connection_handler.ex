@@ -28,9 +28,14 @@ defmodule DistributedAlgorithmsApp.PerfectLinkConnectionHandler do
   def handle_info({:tcp, _socket, packet}, state) do
     #Logger.info("PERFECT_LINK_CONNECTION_HANDLER: Received packet #{inspect(packet)}")
     <<_::binary-size(@message_size_in_bytes), binary_message::binary>> = packet
-    message = Protobuf.decode(binary_message, Proto.Message)
 
-    PerfectLinkLayer.deliver_message(message, state)
+    try do
+      message = Protobuf.decode(binary_message, Proto.Message)
+      PerfectLinkLayer.deliver_message(message, state)
+    rescue
+      e -> e
+    end
+
     {:noreply, state}
   end
 

@@ -6,15 +6,17 @@ defmodule DistributedAlgorithmsApp.EpochChange do
 
   # checked
   def receive_trust_event(message, state) do
+    IO.inspect state, label: "Trust event", limit: :infinity
+
     topic = message
       |> get_in(Enum.map([:ToAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
 
     topic_state = Map.get(state.consensus_dictionary, topic)
-    leader = GenServer.call(state.pl_memory_pid, {:update_trusted, message.eldTrust.process})
+    leader = GenServer.call(state.pl_memory_pid, {:update_trusted, message.eldTrust.process, topic})
 
     if leader == state.process_id_struct do
-      new_ts = GenServer.call(state.pl_memory_pid, {:update_ts, state.ts + length(state.process_id_structs)})
+      new_ts = GenServer.call(state.pl_memory_pid, {:update_ts, state.ts + length(state.process_id_structs), topic})
       modified_topic_state = topic_state
         |> Map.put(:trusted, leader)
         |> Map.put(:ts, new_ts)
@@ -43,16 +45,22 @@ defmodule DistributedAlgorithmsApp.EpochChange do
 
   # checked
   def deliver_ep_internal_newepoch_message(message, state) do
+    IO.inspect state, label: "Newepoch event", limit: :infinity
     topic = message
       |> get_in(Enum.map([:bebDeliver, :message, :ToAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
+    IO.inspect topic, label: "TOPIC"
     topic_state = Map.get(state.consensus_dictionary, topic)
 
     newts = message
       |> get_in(Enum.map([:bebDeliver, :message, :ecInternalNewEpoch, :timestamp], &Access.key!(&1)))
 
+    # if topic_state == nil do
+    #   IO.inspect state.consensus_dictionary, label: "Consensus dictionary", limit: :infinity
+    # end
+
     if message.bebDeliver.sender == topic_state.trusted and newts > topic_state.lastts do
-      new_lastts = GenServer.call(state.pl_memory_pid, {:update_lastts, topic_state.lastts + newts})
+      new_lastts = GenServer.call(state.pl_memory_pid, {:update_lastts, topic_state.lastts + newts, topic})
 
       modified_topic_state = topic_state
         |> Map.put(:lastts, new_lastts)
@@ -103,7 +111,7 @@ defmodule DistributedAlgorithmsApp.EpochChange do
     topic_state = Map.get(state.consensus_dictionary, topic)
 
     if topic_state.trusted == state.process_id_struct do
-      new_ts = GenServer.call(state.pl_memory_pid, {:update_ts, topic_state.ts + length(state.process_id_structs)})
+      new_ts = GenServer.call(state.pl_memory_pid, {:update_ts, topic_state.ts + length(state.process_id_structs), topic})
 
       modified_topic_state = topic_state
         |> Map.put(:ts, new_ts)

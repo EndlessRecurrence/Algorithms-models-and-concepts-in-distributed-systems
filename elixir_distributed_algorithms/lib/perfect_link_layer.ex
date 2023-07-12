@@ -82,7 +82,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
 
   def deliver_message(message, state) do
     case Map.get(message, :networkMessage) do
-      nil -> IO.inspect message, label: "STRANGE BUG", limit: :infinity
+      nil -> nil #IO.inspect message, label: "STRANGE BUG", limit: :infinity
       _ -> deliver_message_with_guard_against_empty_network_messages(message, state)
     end
   end

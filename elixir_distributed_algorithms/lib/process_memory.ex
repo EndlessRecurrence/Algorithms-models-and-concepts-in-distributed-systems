@@ -39,8 +39,8 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       ### eventually perfect failure detector variables
       alive: state.process_id_structs,
       suspected: [],
-      initial_delay: 100, # 100 milliseconds, 0.1 seconds
-      delay: 100, # 100 milliseconds, 0.1 seconds
+      initial_delay: 1000, # 100 milliseconds, 0.1 seconds
+      delay: 1000, # 100 milliseconds, 0.1 seconds
       ### epoch change variables
       leader: leader,
       trusted: leader,
@@ -71,6 +71,8 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
 
     new_state = epfd_state
       |> Map.put(:epfd_id, epfd_id)
+
+    IO.inspect new_state, label: "New state from PROCESS_MEMORY", limit: :infinity
 
     {:reply, new_state, new_state}
   end

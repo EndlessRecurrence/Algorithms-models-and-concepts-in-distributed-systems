@@ -12,7 +12,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
   # checked
   @impl true
   def init({initial_state, topic}) do
-    IO.inspect initial_state, label: "EPFD initial state"
+    # IO.inspect initial_state, label: "EPFD initial state"
     delay = Map.get(initial_state.consensus_dictionary, topic)
       |> Map.get(:delay)
 
@@ -103,7 +103,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
       |> get_in(Enum.map([:plDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
 
-    IO.inspect message, label: "Request heartbeat message caught in generic handler @ EFPD", limit: :infinity
+    # IO.inspect message, label: "Request heartbeat message caught in generic handler @ EFPD", limit: :infinity
     abstraction_id = "app.uc[" <> topic <> "].ec.eld.epfd"
 
     heartbeat_reply_message = %Proto.Message {
@@ -134,7 +134,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
       |> AbstractionIdUtils.extract_topic_name()
     topic_state = Map.get(state.consensus_dictionary, topic)
 
-    IO.inspect message, label: "Reply heartbeat message caught in generic handler @ EFPD", limit: :infinity
+    # IO.inspect message, label: "Reply heartbeat message caught in generic handler @ EFPD", limit: :infinity
     updated_alive_list = [message.plDeliver.sender | Map.get(topic_state, :alive)] |> Enum.uniq()
 
     modified_topic_state = Map.put(topic_state, :alive, updated_alive_list)
