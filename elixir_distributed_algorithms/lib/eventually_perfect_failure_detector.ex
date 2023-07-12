@@ -3,7 +3,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
   alias DistributedAlgorithmsApp.PerfectLinkLayer
   alias DistributedAlgorithmsApp.EventualLeaderDetector
   alias DistributedAlgorithmsApp.AbstractionIdUtils
-  require Logger
+  # require Logger
 
   def start_link(args) do
     GenServer.start_link(__MODULE__, args)

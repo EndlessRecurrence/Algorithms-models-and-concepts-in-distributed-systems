@@ -395,3 +395,5 @@ Unlike linearizability, serializability does not—by itself—impose any real-t
 - [Why is data deep-copied when sending it to another process?](https://elixirforum.com/t/why-is-data-deep-copied-when-sending-to-another-process/26330)
 
 - [How to create a periodical timer in Elixir?](https://stackoverflow.com/questions/69839878/how-to-create-periodical-timer-with-elixir)
+
+- [What is EMFILE?](https://blog.izs.me/2013/07/wtf-is-emfile-and-why-does-it-happen-to-me/)

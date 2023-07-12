@@ -1,6 +1,6 @@
 defmodule DistributedAlgorithmsApp.ProcessMemory do
   use GenServer
-  require Logger
+  # require Logger
   alias DistributedAlgorithmsApp.EventuallyPerfectFailureDetector
 
   def start_link(args) do
@@ -27,7 +27,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
 
   @impl true
   def handle_call({:initialize_epfd_layer, topic_name}, _from, state) do
-    Logger.info("PROCESS_MEMORY: SAVE_PROCESS_ID_STRUCTS")
+    # Logger.info("PROCESS_MEMORY: SAVE_PROCESS_ID_STRUCTS")
 
     if Map.has_key?(state, :epfd_id) do
       Process.exit(state.epfd_id, :kill)

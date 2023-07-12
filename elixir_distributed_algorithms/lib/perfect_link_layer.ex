@@ -1,5 +1,5 @@
 defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
-  require Logger
+  # require Logger
   alias DistributedAlgorithmsApp.PerfectLinkConnectionHandler
   alias DistributedAlgorithmsApp.ProcessMemory
   alias DistributedAlgorithmsApp.AppLayer
@@ -81,6 +81,13 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
   end
 
   def deliver_message(message, state) do
+    case Map.get(message, :networkMessage) do
+      nil -> IO.inspect message, label: "STRANGE BUG", limit: :infinity
+      _ -> deliver_message_with_guard_against_empty_network_messages(message, state)
+    end
+  end
+
+  defp deliver_message_with_guard_against_empty_network_messages(message, state) do
     updated_message = %Proto.Message {
       FromAbstractionId: Map.get(message, :FromAbstractionId),
       ToAbstractionId: Map.get(message, :ToAbstractionId),
@@ -115,8 +122,8 @@ defmodule DistributedAlgorithmsApp.PerfectLinkLayer do
   end
 
   def extract_sender_process_id(message, state) do
-    sender_host = message.networkMessage.senderHost
-    sender_port = message.networkMessage.senderListeningPort
+    sender_host = Map.get(message, :networkMessage) |> Map.get(:senderHost)
+    sender_port = Map.get(message, :networkMessage) |> Map.get(:senderListeningPort)
     sender_process_id_struct = struct(Proto.ProcessId, host: sender_host, port: sender_port, owner: nil, index: nil, rank: nil)
 
     case state.process_id_structs do

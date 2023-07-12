@@ -6,7 +6,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   alias DistributedAlgorithmsApp.TimestampRankPair
   alias DistributedAlgorithmsApp.UniformConsensus
   alias DistributedAlgorithmsApp.AbstractionIdUtils
-  require Logger
+  # require Logger
 
   def receive_message(message, state) do
     case message.type do
@@ -17,7 +17,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
 
   defp receive_pl_deliver_message(message, state) do
     case message.plDeliver.message.type do
-      :PROC_DESTROY_SYSTEM -> Logger.info("APP_LAYER: Hub destroyed process system.")
+      :PROC_DESTROY_SYSTEM -> IO.puts("APP_LAYER: Hub destroyed process system.")
       :PROC_INITIALIZE_SYSTEM -> initialize_system(message, state)
       :APP_BROADCAST -> send_broadcast_message(message, state)
       :APP_PROPOSE -> deliver_app_propose_message(message, state)
@@ -36,9 +36,8 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   end
 
   defp deliver_app_propose_message(message, state) do
-    value = message.plDeliver.message.appPropose.value.v
     topic = message.plDeliver.message.appPropose.topic
-    Logger.info("APP_LAYER: Received the :APP_PROPOSE message with value #{value} and topic #{topic}")
+    # Logger.info("APP_LAYER: Received the :APP_PROPOSE message with value #{value} and topic #{topic}")
 
     new_state = GenServer.call(state.pl_memory_pid, {:initialize_epfd_layer, topic})
     abstraction_id = "app.uc[" <> topic <> "]"
@@ -127,7 +126,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     new_state = %{state | registers: registers}
     GenServer.call(state.pl_memory_pid, {:save_register_writer_data, new_state.registers})
 
-    Logger.info("NNAR_INTERNAL_READ #{state.owner}-#{state.process_index} MESSAGE RECEIVED, SENDING VALUE FROM REGISTER #{register_name}, ABSTRACTION ID #{abstraction_id}")
+    # Logger.info("NNAR_INTERNAL_READ #{state.owner}-#{state.process_index} MESSAGE RECEIVED, SENDING VALUE FROM REGISTER #{register_name}, ABSTRACTION ID #{abstraction_id}")
     updated_message = %Proto.Message {
       type: :PL_SEND,
       FromAbstractionId: abstraction_id,
@@ -168,7 +167,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     abstraction_id = "app.nnar[" <> register_to_write <> "].pl"
     cut_abstraction_name = fn x -> String.split(x, ".") |> Enum.drop(-1) |> Enum.join(".") end
 
-    Logger.info("NNAR_INTERNAL_WRITE #{state.owner}-#{state.process_index} MESSAGE RECEIVED, WRITING TO REGISTER #{register_to_write}, ABSTRACTION ID #{abstraction_id}")
+    # Logger.info("NNAR_INTERNAL_WRITE #{state.owner}-#{state.process_index} MESSAGE RECEIVED, WRITING TO REGISTER #{register_to_write}, ABSTRACTION ID #{abstraction_id}")
 
     if TimestampRankPair.compare(received_struct, Map.get(state.registers, register_to_write).timestamp_rank_value_tuple) do
       GenServer.call(state.pl_memory_pid, {:save_new_timestamp_rank_pair, received_struct, register_to_write})
@@ -205,18 +204,18 @@ defmodule DistributedAlgorithmsApp.AppLayer do
     current_register = GenServer.call(state.pl_memory_pid, {:get_register, register_name})
 
     if message.bebDeliver.message.nnarInternalAck.readId == current_register.request_id do
-      Logger.info("NNAR_INTERNAL_ACK MESSAGE RECEIVED BY #{state.process_id_struct.owner}-#{state.process_id_struct.index}: #{current_register.request_id}")
+      # Logger.info("NNAR_INTERNAL_ACK MESSAGE RECEIVED BY #{state.process_id_struct.owner}-#{state.process_id_struct.index}: #{current_register.request_id}")
       acknowledgments = GenServer.call(state.pl_memory_pid, {:increment_ack_counter, register_name})
       n = length(state.process_id_structs)
 
       abstraction_id = "app.nnar[" <> register_name <> "].pl"
 
       if acknowledgments > div(n, 2) do
-        Logger.info("ACKNOWLEDGMENT MAJORITY")
+        # Logger.info("ACKNOWLEDGMENT MAJORITY")
         GenServer.call(state.pl_memory_pid, {:reset_ack_counter, register_name})
         response =
           if current_register.reading == true do
-            Logger.info("READING FLAG IS TRUE #{state.process_id_struct.owner}-#{state.process_id_struct.index}")
+            # Logger.info("READING FLAG IS TRUE #{state.process_id_struct.owner}-#{state.process_id_struct.index}")
             %Proto.Message {
               type: :APP_READ_RETURN,
               FromAbstractionId: abstraction_id,

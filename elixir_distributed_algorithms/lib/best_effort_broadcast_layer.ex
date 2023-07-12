@@ -5,7 +5,7 @@ defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
   alias DistributedAlgorithmsApp.PerfectLinkLayer
   alias DistributedAlgorithmsApp.EpochConsensus
   alias DistributedAlgorithmsApp.EpochChange
-  require Logger
+  # require Logger
 
   def receive_message(message, state) do
     deliver_message(message, state)
@@ -33,7 +33,7 @@ defmodule DistributedAlgorithmsApp.BestEffortBroadcastLayer do
   end
 
   def send_broadcast_message(message, process_id_struct, state) do
-    Logger.info("BEST_EFFORT_BROADCAST_LAYER: SENDING BROADCAST WITH #{message.bebBroadcast.message.type}")
+    # Logger.info("BEST_EFFORT_BROADCAST_LAYER: SENDING BROADCAST WITH #{message.bebBroadcast.message.type}")
     keys = [:ToAbstractionId]
     to_abstraction_id = get_in(message, Enum.map(keys, &Access.key!(&1)))
     abstraction_id_with_cut_token =

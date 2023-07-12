@@ -4,11 +4,11 @@ defmodule DistributedAlgorithmsApp.NnAtomicRegisterLayer do
   alias DistributedAlgorithmsApp.BestEffortBroadcastLayer
   alias DistributedAlgorithmsApp.PerfectLinkLayer
   alias DistributedAlgorithmsApp.TimestampRankPair
-  require Logger
+  # require Logger
 
   ## CHECKED !!!
   def write_value(message, state) do
-    Logger.info("NNAR_ATOMIC_REGISTER: WRITE VALUE AND READ FROM OTHER PROCESSES")
+    # Logger.info("NNAR_ATOMIC_REGISTER: WRITE VALUE AND READ FROM OTHER PROCESSES")
 
     edited_register = message.plDeliver.message.appWrite.register
     current_register =
@@ -63,7 +63,7 @@ defmodule DistributedAlgorithmsApp.NnAtomicRegisterLayer do
   end
 
   def read_value(message, state) do
-    Logger.info("NNAR_ATOMIC_REGISTER: READ VALUE AND READ FROM OTHER PROCESSES")
+    # Logger.info("NNAR_ATOMIC_REGISTER: READ VALUE AND READ FROM OTHER PROCESSES")
 
     edited_register = message.plDeliver.message.appRead.register
     current_register = if not Map.has_key?(state.registers, edited_register) do
@@ -127,7 +127,7 @@ defmodule DistributedAlgorithmsApp.NnAtomicRegisterLayer do
   end
 
   def send_app_return_message(message, state) do
-    Logger.info("NN ATOMIC REGISTER #{state.owner}-#{state.process_index}: SENT #{message.type} TO HUB")
+    # Logger.info("NN ATOMIC REGISTER #{state.owner}-#{state.process_index}: SENT #{message.type} TO HUB")
     response = %Proto.Message {
       type: :PL_SEND,
       plSend: %Proto.PlSend {

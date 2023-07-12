@@ -2,7 +2,7 @@ defmodule DistributedAlgorithmsApp.PerfectLinkConnectionHandler do
   use GenServer
   alias Protobuf
   alias DistributedAlgorithmsApp.PerfectLinkLayer
-  require Logger
+  # require Logger
 
   @message_size_in_bytes 4
 
