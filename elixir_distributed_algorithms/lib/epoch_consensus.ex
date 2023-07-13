@@ -7,6 +7,7 @@ defmodule DistributedAlgorithmsApp.EpochConsensus do
   # checked
   ### only the leader
   def send_proposal_event(message, state) do
+    IO.inspect state, label: "EP: Proposal event state", limit: :infinity
     topic =
       Map.get(message, :FromAbstractionId)
       |> AbstractionIdUtils.extract_topic_name()
@@ -38,6 +39,7 @@ defmodule DistributedAlgorithmsApp.EpochConsensus do
 
   # checked
   def deliver_ep_internal_read_message(message, state) do
+    IO.inspect state, label: "EP: Internal read event state", limit: :infinity
     topic = message
       |> get_in(Enum.map([:bebDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
@@ -75,6 +77,7 @@ defmodule DistributedAlgorithmsApp.EpochConsensus do
   # checked
   ### only the leader
   def deliver_ep_internal_state_message(message, state) do
+    IO.inspect state, label: "EP: Internal state event state", limit: :infinity
     topic = message
       |> get_in(Enum.map([:plDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
@@ -131,6 +134,7 @@ defmodule DistributedAlgorithmsApp.EpochConsensus do
 
   # checked
   def deliver_ep_internal_write_message(message, state) do
+    IO.inspect state, label: "EP: Internal write event state", limit: :infinity
     topic = message
       |> get_in(Enum.map([:bebDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
@@ -171,6 +175,7 @@ defmodule DistributedAlgorithmsApp.EpochConsensus do
   # checked
   ### only the leader
   def deliver_ep_internal_accept_message(message, state) do
+    IO.inspect state, label: "EP: Internal accept event state", limit: :infinity
     topic = message
       |> get_in(Enum.map([:plDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
@@ -215,6 +220,7 @@ defmodule DistributedAlgorithmsApp.EpochConsensus do
 
   # checked
   def deliver_ep_internal_decided_message(message, state) do
+    IO.inspect state, label: "EP: Internal decided event state", limit: :infinity
     topic = message
       |> get_in(Enum.map([:bebDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
@@ -242,6 +248,7 @@ defmodule DistributedAlgorithmsApp.EpochConsensus do
 
   # checked
   def receive_ep_abort_message(message, state) do
+    IO.inspect state, label: "EP: Ep abort event state", limit: :infinity
     topic = message
       |> get_in(Enum.map([:FromAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()

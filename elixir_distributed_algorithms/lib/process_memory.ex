@@ -79,9 +79,13 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
 
   @impl true
   def handle_call({:update_suspected_list, new_suspected, topic}, _from, state) do
-    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+    new_consensus_dictionary =
+      Map.get(state, :consensus_dictionary)
+      |> Map.get(topic)
       |> Map.put(:suspected, new_suspected)
-    new_state = state |> Map.put(:consensus_dictionary, new_consensus_dictionary)
+    IO.inspect new_consensus_dictionary, label: "New consensus dictionary after suspected list update", limit: :infinity
+    new_state = Map.put(state, :consensus_dictionary, new_consensus_dictionary)
+    IO.inspect new_state, label: "New state after suspected list update", limit: :infinity
     {:reply, new_suspected, new_state}
   end
 

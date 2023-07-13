@@ -12,6 +12,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
   # checked
   @impl true
   def init({initial_state, topic}) do
+    IO.inspect initial_state, label: "EPFD: initial state", limit: :infinity
     # IO.inspect initial_state, label: "EPFD initial state"
     delay = Map.get(initial_state.consensus_dictionary, topic)
       |> Map.get(:delay)
@@ -27,7 +28,8 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
   # checked
   @impl true
   def handle_info(:timeout, state) do
-    IO.puts("EPFD #{:erlang.pid_to_list(self())} timed out.")
+    IO.inspect state, label: "EPFD: timeout state", limit: :infinity
+    # IO.puts("EPFD #{:erlang.pid_to_list(self())} timed out.")
     topic = state.topic
     topic_state = Map.get(state.consensus_dictionary, topic)
     new_delay = if topic_state.alive != [] and topic_state.suspected != [], do: topic_state.delay + topic_state.initial_delay, else: topic_state.delay
@@ -87,10 +89,12 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
         new_suspected
       end)
 
-    new_state = state
+    modified_topic_state = topic_state
       |> Map.put(:delay, new_delay)
       |> Map.put(:alive, [])
       |> Map.put(:suspected, updated_suspected)
+
+    new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
 
     Process.send_after(self(), :timeout, new_delay)
     {:noreply, new_state}
@@ -99,6 +103,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
   # checked
   @impl true
   def handle_info({:EPFD_INTERNAL_HEARTBEAT_REQUEST, message, pl_state}, state) do
+    IO.inspect state, label: "EPFD: heartbeat request state", limit: :infinity
     topic = message
       |> get_in(Enum.map([:plDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
@@ -129,6 +134,8 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
   # checked
   @impl true
   def handle_info({:EPFD_INTERNAL_HEARTBEAT_REPLY, message, pl_state}, state) do
+    IO.inspect state, label: "EPFD: heartbeat reply state", limit: :infinity
+
     topic = message
       |> get_in(Enum.map([:plDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()

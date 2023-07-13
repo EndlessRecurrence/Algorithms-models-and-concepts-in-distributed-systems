@@ -1,28 +1,30 @@
 defmodule DistributedAlgorithmsApp.EventualLeaderDetector do
-  alias DistributedAlgorithmsApp.EventuallyPerfectFailureDetector
   alias DistributedAlgorithmsApp.EpochChange
-  alias DistributedAlgorithmsApp.ProcessMemory
   alias DistributedAlgorithmsApp.AbstractionIdUtils
 
   # checked
   def receive_epfd_suspect_event(message, state) do
+    IO.inspect state, label: "ELD: EPFD suspect event state", limit: :infinity
     abstraction = message |> get_in(Enum.map([:ToAbstractionId], &Access.key!(&1)))
     deliver_trust_event(message.epfdSuspect.process, state, abstraction)
   end
 
   # checked
   def receive_epfd_restore_event(message, state) do
+    IO.inspect state, label: "ELD: EPFD restore event state", limit: :infinity
     abstraction = message |> get_in(Enum.map([:ToAbstractionId], &Access.key!(&1)))
     deliver_trust_event(message.epfdRestore.process, state, abstraction)
   end
 
   # checked
   defp deliver_trust_event(leader, state, abstraction_id) do
+    IO.inspect state, label: "ELD: trust event state", limit: :infinity
+
     topic = AbstractionIdUtils.extract_topic_name(abstraction_id)
     topic_state = Map.get(state.consensus_dictionary, topic)
 
     all_processes = state.process_id_structs |> MapSet.new()
-    suspected_processes = state.suspected |> MapSet.new()
+    suspected_processes = topic_state.suspected |> MapSet.new()
     process_with_strongest_rank = all_processes
       |> MapSet.difference(suspected_processes)
       |> MapSet.to_list()

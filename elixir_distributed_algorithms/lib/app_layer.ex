@@ -36,6 +36,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   end
 
   defp deliver_app_propose_message(message, state) do
+    IO.inspect state, label: "APP: propose event state", limit: :infinity
     topic = message.plDeliver.message.appPropose.topic
     # Logger.info("APP_LAYER: Received the :APP_PROPOSE message with value #{value} and topic #{topic}")
 
@@ -55,6 +56,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   end
 
   def receive_uc_decide_event(message, state) do
+    IO.inspect state, label: "APP: UC decide event state", limit: :infinity
     topic =
       Map.get(message, :FromAbstractionId)
       |> AbstractionIdUtils.extract_topic_name()

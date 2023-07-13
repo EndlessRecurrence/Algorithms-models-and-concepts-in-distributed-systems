@@ -1,3 +1,3 @@
 #!/bin/sh
-ulimit -n 8192
+ulimit -n 65535
 iex -S mix

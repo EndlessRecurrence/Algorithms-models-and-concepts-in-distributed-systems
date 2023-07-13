@@ -5,6 +5,7 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
 
   # checked
   def trigger_uc_propose_event(message, state) do
+    IO.inspect state, label: "UC: Uc propose event state", limit: :infinity
     topic =
       Map.get(message, :ToAbstractionId)
       |> AbstractionIdUtils.extract_topic_name()
@@ -17,6 +18,7 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
 
   # checked
   def receive_ec_startepoch_event(message, state) do
+    IO.inspect state, label: "UC: Ec startepoch event state", limit: :infinity
     topic =
       Map.get(message, :ToAbstractionId)
       |> AbstractionIdUtils.extract_topic_name()
@@ -41,6 +43,7 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
 
   # checked
   def deliver_ep_aborted_event(message, state) do
+    IO.inspect state, label: "UC: Ep aborted event state", limit: :infinity
     topic =
       Map.get(message, :ToAbstractionId)
       |> AbstractionIdUtils.extract_topic_name()
@@ -66,6 +69,7 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
 
   # checked
   defp send_proposal_event(state, topic) do
+    IO.inspect state, label: "UC: proposal event state", limit: :infinity
     topic_state =
       Map.get(state, :consensus_dictionary)
       |> Map.get(topic)
@@ -94,6 +98,7 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
 
   # checked
   def deliver_ep_decide_event(message, state) do
+    IO.inspect state, label: "UC: Ep decide event state", limit: :infinity
     topic =
       Map.get(message, :FromAbstractionId)
       |> AbstractionIdUtils.extract_topic_name()
