@@ -36,7 +36,7 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   end
 
   defp deliver_app_propose_message(message, state) do
-    IO.inspect state, label: "APP: propose event state", limit: :infinity
+    IO.puts("APP: UC propose event")
     topic = message.plDeliver.message.appPropose.topic
     # Logger.info("APP_LAYER: Received the :APP_PROPOSE message with value #{value} and topic #{topic}")
 
@@ -56,7 +56,8 @@ defmodule DistributedAlgorithmsApp.AppLayer do
   end
 
   def receive_uc_decide_event(message, state) do
-    IO.inspect state, label: "APP: UC decide event state", limit: :infinity
+    IO.puts("APP: UC decide event")
+
     topic =
       Map.get(message, :FromAbstractionId)
       |> AbstractionIdUtils.extract_topic_name()
@@ -70,8 +71,8 @@ defmodule DistributedAlgorithmsApp.AppLayer do
       plSend: %Proto.PlSend {
         destination: %Proto.ProcessId {host: state.hub_address, port: state.hub_port, owner: "hub", index: 0, rank: 0},
         message: %Proto.Message {
-          FromAbstractionId: source_abstraction_id, # be careful with the abstractions
-          ToAbstractionId: destination_abstraction_id, # be careful with the abstractions
+          FromAbstractionId: "app", # be careful with the abstractions
+          ToAbstractionId: "app", # be careful with the abstractions
           type: :APP_DECIDE,
           appDecide: %Proto.AppDecide {
             value: message.ucDecide.value

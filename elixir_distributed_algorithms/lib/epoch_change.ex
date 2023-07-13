@@ -6,7 +6,7 @@ defmodule DistributedAlgorithmsApp.EpochChange do
 
   # checked
   def receive_trust_event(message, state) do
-    IO.inspect state, label: "EC: Trust event state", limit: :infinity
+    IO.puts("EC: Trust event")
 
     topic = message
       |> get_in(Enum.map([:ToAbstractionId], &Access.key!(&1)))
@@ -45,7 +45,7 @@ defmodule DistributedAlgorithmsApp.EpochChange do
 
   # checked
   def deliver_ep_internal_newepoch_message(message, state) do
-    IO.inspect state, label: "EC: Newepoch event state", limit: :infinity
+    # IO.puts("EC: Newepoch event")
     topic = message
       |> get_in(Enum.map([:bebDeliver, :message, :ToAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
@@ -84,8 +84,8 @@ defmodule DistributedAlgorithmsApp.EpochChange do
       destination_abstraction_id = "app.uc[" <> topic <> "].ec.pl"
 
       nack_message = %Proto.Message {
-        FromAbstractionId: "app.pl",
-        ToAbstractionId: "app.pl",
+        FromAbstractionId: destination_abstraction_id,
+        ToAbstractionId: destination_abstraction_id,
         type: :PL_SEND,
         plSend: %Proto.PlSend {
           destination: message.bebDeliver.sender,
@@ -104,7 +104,7 @@ defmodule DistributedAlgorithmsApp.EpochChange do
 
   # checked
   def deliver_ec_internal_nack_message(message, state) do
-    IO.inspect state, label: "EC: Nack event state", limit: :infinity
+    IO.puts("EC: Nack event")
     topic = message
       |> get_in(Enum.map([:plDeliver, :message, :ToAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
@@ -121,8 +121,8 @@ defmodule DistributedAlgorithmsApp.EpochChange do
       destination_abstraction_id = "app.uc[" <> topic <> "].ec.beb"
 
       newepoch_message = %Proto.Message {
-        FromAbstractionId: "app.pl",
-        ToAbstractionId: "app.pl",
+        FromAbstractionId: destination_abstraction_id <> ".pl",
+        ToAbstractionId: destination_abstraction_id <> ".pl",
         type: :BEB_BROADCAST,
         bebBroadcast: %Proto.BebBroadcast {
           message: %Proto.Message {

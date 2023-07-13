@@ -5,27 +5,30 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
 
   # checked
   def trigger_uc_propose_event(message, state) do
-    IO.inspect state, label: "UC: Uc propose event state", limit: :infinity
+    IO.puts("UC: Uc propose event")
+
     topic =
       Map.get(message, :ToAbstractionId)
       |> AbstractionIdUtils.extract_topic_name()
+
     GenServer.call(state.pl_memory_pid, {:update_val, message.ucPropose.value, topic})
     modified_topic_state = Map.get(state.consensus_dictionary, topic) |> Map.put(:val, message.ucPropose.value)
-    modified_consensus_dictionary = Map.get(state, :consensus_dictionary) |> Map.put(topic, modified_topic_state)
-    new_state = state |> Map.put(:consensus_dictionary, modified_consensus_dictionary)
+    new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
+
     send_proposal_event(new_state, topic)
   end
 
   # checked
   def receive_ec_startepoch_event(message, state) do
-    IO.inspect state, label: "UC: Ec startepoch event state", limit: :infinity
+    IO.puts("UC: Ec startepoch event")
+
     topic =
       Map.get(message, :ToAbstractionId)
       |> AbstractionIdUtils.extract_topic_name()
     newts_newl_pair = GenServer.call(state.pl_memory_pid, {:update_newts_newl_pair, {message.ecStartEpoch.newTimestamp, message.ecStartEpoch.newLeader}, topic})
 
     modified_topic_state = Map.get(state.consensus_dictionary, topic) |> Map.put(:newts_newl_pair, newts_newl_pair)
-    new_state = state |> Map.put(:consensus_dictionary, modified_topic_state)
+    new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
     {epoch_consensus_timestamp, _leader} = modified_topic_state.ets_leader_pair
 
     source_abstraction_id = "app.uc[" <> topic <> "]"
@@ -43,7 +46,8 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
 
   # checked
   def deliver_ep_aborted_event(message, state) do
-    IO.inspect state, label: "UC: Ep aborted event state", limit: :infinity
+    IO.puts("UC: Ep aborted event")
+
     topic =
       Map.get(message, :ToAbstractionId)
       |> AbstractionIdUtils.extract_topic_name()
@@ -69,13 +73,16 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
 
   # checked
   defp send_proposal_event(state, topic) do
-    IO.inspect state, label: "UC: proposal event state", limit: :infinity
-    topic_state =
-      Map.get(state, :consensus_dictionary)
-      |> Map.get(topic)
+    IO.puts("UC: proposal event")
+
+    topic_state = Map.get(state.consensus_dictionary, topic)
     leader = Map.get(topic_state, :leader) |> then(fn x -> if x == nil, do: nil, else: x end)
 
-    # second condition might fail if the default null value is something other than nil...
+    IO.inspect leader, label: "UC: send_proposal_event -> leader"
+    IO.inspect state.process_id_struct, label: "UC: send_proposal_event -> process_id_struct"
+    IO.inspect topic_state.val.v, label: "UC: send_proposal_event -> topic_state.val.v"
+    IO.inspect topic_state.proposed, label: "UC: send_proposal_event -> topic_state.proposed"
+
     if leader == state.process_id_struct and topic_state.val.v != nil and topic_state.proposed == false do
       GenServer.call(state.pl_memory_pid, {:update_proposed_flag, true, topic})
       modified_topic_state = topic_state |> Map.put(:proposed, true)
@@ -83,7 +90,7 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
 
       {epoch_consensus_timestamp, _leader} = modified_topic_state.ets_leader_pair
       source_abstraction_id = "app.uc[" <> topic <> "]"
-      destination_abstraction_id = "app.uc[" <> topic <> "]" <> ".ep[" <> Integer.to_string(epoch_consensus_timestamp) <> "]"
+      destination_abstraction_id = "app.uc[" <> topic <> "]" <> ".ep[" <> epoch_consensus_timestamp <> "]"
 
       ep_propose_event = %Proto.Message {
         FromAbstractionId: source_abstraction_id, # be careful with the abstractions
@@ -98,7 +105,8 @@ defmodule DistributedAlgorithmsApp.UniformConsensus do
 
   # checked
   def deliver_ep_decide_event(message, state) do
-    IO.inspect state, label: "UC: Ep decide event state", limit: :infinity
+    IO.puts("UC: Ep decide event")
+
     topic =
       Map.get(message, :FromAbstractionId)
       |> AbstractionIdUtils.extract_topic_name()

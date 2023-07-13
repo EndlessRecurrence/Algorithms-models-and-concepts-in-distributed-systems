@@ -22,7 +22,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       |> Map.put(:consensus_dictionary, %{})
       |> Map.put(:pl_memory_pid, self())
 
-    IO.inspect new_state, label: "PROCESS_MEMORY SAVE_PROCESS_ID_STRUCTS: state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY SAVE_PROCESS_ID_STRUCTS: state", limit: :infinity
     {:reply, {process_id_structs, process_id_struct}, new_state}
   end
 
@@ -40,8 +40,8 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       ### eventually perfect failure detector variables
       alive: state.process_id_structs,
       suspected: [],
-      initial_delay: 1000, # 100 milliseconds, 0.1 seconds
-      delay: 1000, # 100 milliseconds, 0.1 seconds
+      initial_delay: 100, # 100 milliseconds, 0.1 seconds
+      delay: 100, # 100 milliseconds, 0.1 seconds
       ### epoch change variables
       leader: leader,
       trusted: leader,
@@ -73,7 +73,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
     new_state = epfd_state
       |> Map.put(:epfd_id, epfd_id)
 
-    IO.inspect new_state, label: "PROCESS_MEMORY: EPFD LAYER INIT state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY: EPFD LAYER INIT state", limit: :infinity
     {:reply, new_state, new_state}
   end
 
@@ -83,19 +83,19 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
       Map.get(state, :consensus_dictionary)
       |> Map.get(topic)
       |> Map.put(:suspected, new_suspected)
-    IO.inspect new_consensus_dictionary, label: "New consensus dictionary after suspected list update", limit: :infinity
+    # IO.inspect new_consensus_dictionary, label: "New consensus dictionary after suspected list update", limit: :infinity
     new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
-    IO.inspect new_state, label: "PROCESS_MEMORY update_suspected_list: state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY update_suspected_list: state", limit: :infinity
     {:reply, new_suspected, new_state}
   end
 
   @impl true
   def handle_call({:update_leader, new_leader, topic}, _from, state) do
-    IO.inspect state, label: "PROCESS_MEMORY before update_leader state", limit: :infinity
+    # IO.inspect state, label: "PROCESS_MEMORY before update_leader state", limit: :infinity
     new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
       |> Map.put(:leader, new_leader)
     new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
-    IO.inspect new_state, label: "PROCESS_MEMORY after update_leader state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY after update_leader state", limit: :infinity
     {:reply, new_leader, new_state}
   end
 
@@ -104,7 +104,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
     new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
       |> Map.put(:trusted, new_trusted)
     new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
-    IO.inspect new_state, label: "PROCESS_MEMORY update_trusted state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY update_trusted state", limit: :infinity
     {:reply, new_trusted, new_state}
   end
 
@@ -113,8 +113,17 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
     new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
       |> Map.put(:ts, new_ts)
     new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
-    IO.inspect new_state, label: "PROCESS_MEMORY update_ts state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY update_ts state", limit: :infinity
     {:reply, new_ts, new_state}
+  end
+
+  @impl true
+  def handle_call({:update_lastts, new_lastts, topic}, _from, state) do
+    new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
+      |> Map.put(:lastts, new_lastts)
+    new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
+    # IO.inspect new_state, label: "PROCESS_MEMORY update_ts state", limit: :infinity
+    {:reply, new_lastts, new_state}
   end
 
   @impl true
@@ -122,17 +131,17 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
     new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
       |> Map.put(:tmpval, proposed_value)
     new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
-    IO.inspect new_state, label: "PROCESS_MEMORY update_tmpval state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY update_tmpval state", limit: :infinity
     {:reply, proposed_value, new_state}
   end
 
   @impl true
   def handle_call({:update_val, value, topic}, _from, state) do
-    IO.inspect state, label: "PROCESS_MEMORY before update_val state", limit: :infinity
+    # IO.inspect state, label: "PROCESS_MEMORY before update_val state", limit: :infinity
     new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
       |> Map.put(:val, value)
     new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
-    IO.inspect new_state, label: "PROCESS_MEMORY after update_val state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY after update_val state", limit: :infinity
     {:reply, value, new_state}
   end
 
@@ -141,7 +150,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
     new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
       |> Map.put(:valts_val_pair, new_pair)
     new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
-    IO.inspect new_state, label: "PROCESS_MEMORY update_valts_val_pair state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY update_valts_val_pair state", limit: :infinity
     {:reply, new_pair, new_state}
   end
 
@@ -151,7 +160,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
     new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
       |> Map.put(:states, new_states_list)
     new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
-    IO.inspect new_state, label: "PROCESS_MEMORY update_states_pair state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY update_states_pair state", limit: :infinity
     {:reply, new_states_list, new_state}
   end
 
@@ -160,7 +169,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
     new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
       |> Map.put(:accepted, new_accepted)
     new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
-    IO.inspect new_state, label: "PROCESS_MEMORY update_accepted state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY update_accepted state", limit: :infinity
     {:reply, new_accepted, new_state}
   end
 
@@ -170,7 +179,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
     new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
       |> Map.put(:states, new_states)
     new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
-    IO.inspect new_state, label: "PROCESS_MEMORY reset_states state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY reset_states state", limit: :infinity
     {:reply, [], new_state}
   end
 
@@ -179,7 +188,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
     new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
       |> Map.put(:newts_newl_pair, newts_newl_pair)
     new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
-    IO.inspect new_state, label: "PROCESS_MEMORY update_newts_newl_pair state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY update_newts_newl_pair state", limit: :infinity
     {:reply, newts_newl_pair, new_state}
   end
 
@@ -188,7 +197,7 @@ defmodule DistributedAlgorithmsApp.ProcessMemory do
     new_consensus_dictionary = Map.get(state.consensus_dictionary, topic)
       |> Map.put(:ets_leader_pair, new_ets_leader_pair)
     new_state = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, new_consensus_dictionary))
-    IO.inspect new_state, label: "PROCESS_MEMORY update_ets_leader_pair state", limit: :infinity
+    # IO.inspect new_state, label: "PROCESS_MEMORY update_ets_leader_pair state", limit: :infinity
     {:reply, new_ets_leader_pair, new_state}
   end
 

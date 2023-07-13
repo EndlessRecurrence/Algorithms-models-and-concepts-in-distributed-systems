@@ -33,7 +33,13 @@ defmodule DistributedAlgorithmsApp.PerfectLinkConnectionHandler do
       message = Protobuf.decode(binary_message, Proto.Message)
       PerfectLinkLayer.deliver_message(message, state)
     rescue
-      e -> e
+      e in Protobuf.DecodeError -> e
+      e in Protocol.UndefinedError -> e
+      e in MatchError -> e
+      e in ArgumentError -> reraise e, __STACKTRACE__
+      e in KeyError -> reraise e, __STACKTRACE__
+      e in BadMapError -> reraise e, __STACKTRACE__
+      e -> IO.inspect(e, label: "Error")
     end
 
     {:noreply, state}
