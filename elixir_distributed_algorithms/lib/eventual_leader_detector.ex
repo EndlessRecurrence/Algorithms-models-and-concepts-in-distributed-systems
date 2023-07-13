@@ -4,21 +4,21 @@ defmodule DistributedAlgorithmsApp.EventualLeaderDetector do
 
   # checked
   def receive_epfd_suspect_event(message, state) do
-    IO.inspect state, label: "ELD: EPFD suspect event state", limit: :infinity
+    # IO.inspect state, label: "ELD: EPFD suspect event state", limit: :infinity
     abstraction = message |> get_in(Enum.map([:ToAbstractionId], &Access.key!(&1)))
     deliver_trust_event(message.epfdSuspect.process, state, abstraction)
   end
 
   # checked
   def receive_epfd_restore_event(message, state) do
-    IO.inspect state, label: "ELD: EPFD restore event state", limit: :infinity
+    # IO.inspect state, label: "ELD: EPFD restore event state", limit: :infinity
     abstraction = message |> get_in(Enum.map([:ToAbstractionId], &Access.key!(&1)))
     deliver_trust_event(message.epfdRestore.process, state, abstraction)
   end
 
   # checked
   defp deliver_trust_event(leader, state, abstraction_id) do
-    IO.inspect state, label: "ELD: trust event state", limit: :infinity
+    # IO.inspect state, label: "ELD: trust event state", limit: :infinity
 
     topic = AbstractionIdUtils.extract_topic_name(abstraction_id)
     topic_state = Map.get(state.consensus_dictionary, topic)

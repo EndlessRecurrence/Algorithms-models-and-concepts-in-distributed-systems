@@ -12,23 +12,18 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
   # checked
   @impl true
   def init({initial_state, topic}) do
-    IO.inspect initial_state, label: "EPFD: initial state", limit: :infinity
-    # IO.inspect initial_state, label: "EPFD initial state"
-    delay = Map.get(initial_state.consensus_dictionary, topic)
-      |> Map.get(:delay)
-
+    # IO.inspect initial_state, label: "EPFD: initial state", limit: :infinity
+    delay = Map.get(initial_state.consensus_dictionary, topic) |> Map.get(:delay)
     Process.send_after(self(), :timeout, delay)
 
-    state = initial_state
-      |> Map.put(:topic, topic)
-
+    state = initial_state |> Map.put(:topic, topic)
     {:ok, state}
   end
 
   # checked
   @impl true
   def handle_info(:timeout, state) do
-    IO.inspect state, label: "EPFD: timeout state", limit: :infinity
+    # IO.inspect state, label: "EPFD: timeout state", limit: :infinity
     # IO.puts("EPFD #{:erlang.pid_to_list(self())} timed out.")
     topic = state.topic
     topic_state = Map.get(state.consensus_dictionary, topic)
@@ -44,7 +39,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
             Enum.member?(topic_state.alive, x) == false and Enum.member?(suspected, x) == false ->
               modified_topic_state = Map.put(topic_state, :suspected, Enum.uniq([x | suspected]))
               state_parameter = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
-
+              IO.inspect state_parameter, label: "TRIGGERING EPFD SUSPECT: state while in the suspected list update loop", limit: :infinity
               epfd_suspect_message = %Proto.Message {
                 FromAbstractionId: epfd_source_abstraction_id, # be careful with the abstractions
                 ToAbstractionId: epfd_destination_abstraction_id, # be careful with the abstractions
@@ -58,6 +53,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
               modified_topic_state = Map.put(topic_state, :suspected, Enum.filter(suspected, fn y -> y != x end))
               state_parameter = state |> Map.put(:consensus_dictionary, Map.put(state.consensus_dictionary, topic, modified_topic_state))
 
+              IO.inspect state_parameter, label: "TRIGGERING EPFD RESTORE: state while in the suspected list update loop", limit: :infinity
               epfd_restore_message = %Proto.Message {
                 FromAbstractionId: epfd_source_abstraction_id, # be careful with the abstractions
                 ToAbstractionId: epfd_destination_abstraction_id, # be careful with the abstractions
@@ -103,7 +99,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
   # checked
   @impl true
   def handle_info({:EPFD_INTERNAL_HEARTBEAT_REQUEST, message, pl_state}, state) do
-    IO.inspect state, label: "EPFD: heartbeat request state", limit: :infinity
+    # IO.inspect state, label: "EPFD: heartbeat request state", limit: :infinity
     topic = message
       |> get_in(Enum.map([:plDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
       |> AbstractionIdUtils.extract_topic_name()
@@ -134,7 +130,7 @@ defmodule DistributedAlgorithmsApp.EventuallyPerfectFailureDetector do
   # checked
   @impl true
   def handle_info({:EPFD_INTERNAL_HEARTBEAT_REPLY, message, pl_state}, state) do
-    IO.inspect state, label: "EPFD: heartbeat reply state", limit: :infinity
+    # IO.inspect state, label: "EPFD: heartbeat reply state", limit: :infinity
 
     topic = message
       |> get_in(Enum.map([:plDeliver, :message, :FromAbstractionId], &Access.key!(&1)))
